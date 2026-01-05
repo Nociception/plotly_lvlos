@@ -1,0 +1,48 @@
+TDD / Design assumptions
+
+PHASE 1 — Core datasets (data_x, data_y)
+
+1. Entity column
+    - A common entity column must exist in data_x and data_y
+    - Resolution order:
+    1. If specified by the user (CLI/config):
+        - Use it
+        - Failure leads to a **blocking error**
+    2. Else:
+        - Attempt autodetection
+        - Failure leads to a **blocking error**
+
+2. Temporal / numerical columns
+    - data_x and data_y must share at least one overlapping numerical column
+    - Defines the global timeline
+    - Absence of overlap is a **blocking error**
+
+3. Entity matching (core)
+    - Entity names are assumed to be identical, similar, or fuzzable
+    - Fuzzy matching is attempted
+    - Ambiguous or missing matches are exposed
+    - Manual override (matching instructions) is still possible
+    - Zero match leads to a **blocking error**
+
+4. Core data contract
+    - A validated core table is built:
+        (entity_id, year, x_value, y_value)
+    - No visualization or aggregation is possible without this table
+
+PHASE 2 — Extra datasets (optional enrichment)
+
+5. Entity matching (extra)
+    - Matching against existing entity_id
+    - Missing entities are reported (warnings)
+
+6. Temporal alignment (extra)
+    - Partial year overlap is allowed
+    - Missing years are reported
+
+7. Degradation policy
+    - Extra datasets never invalidate the core
+    - Missing values are propagated as nulls
+
+8. Genericity validation
+    - At least one additional CSV collection is used
+        to validate dataset-agnostic behavior

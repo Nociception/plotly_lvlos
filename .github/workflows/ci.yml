@@ -27,7 +27,7 @@ jobs:
         run: uv venv
 
       - name: Install project dependencies
-        run: uv sync -d
+        run: uv sync
 
       - name: Run CI pipeline
         run: uv run make ci

@@ -31,5 +31,5 @@ clean:
 	@echo "Cleaning cache..."
 	rm -rf __pycache__ */__pycache__
 
-ci: clean build lint test
+ci: clean build format lint test
 	@echo "CI tasks completed successfully!"

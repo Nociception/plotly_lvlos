@@ -20,11 +20,14 @@ jobs:
         with:
           python-version: "3.11"
 
-      - name: Install UV (Hatch)
+      - name: Install Hatch (UV)
         run: python -m pip install --upgrade pip hatch
 
+      - name: Create virtual environment
+        run: uv venv
+
       - name: Install project dependencies
-        run: uv pip install -e .[dev]
+        run: uv sync -d
 
       - name: Run CI pipeline
-        run: make ci
+        run: uv run make ci

@@ -1,7 +1,7 @@
-Choice : so far, handle only csv input datafiles
+# Choice : so far, handle only csv input datafiles
 
 
-Why a materialized core table?
+# Why a materialized core table?
 
 This project relies on a materialized core table as the primary analytical dataset used to generate Plotly animation frames.
 
@@ -50,3 +50,7 @@ simplify reasoning about temporal data completeness,
 and remain reusable for further exploratory analysis if the project is extended.
 
 This choice reflects a common data engineering trade-off: preferring a denormalized analytical dataset when it improves clarity, reusability, and downstream simplicity without introducing meaningful cost or ambiguity.
+
+
+# why a public repo during dev
+because rule set is not effective with a free plan on a private repo

@@ -1,5 +1,5 @@
 [project]
-name = "plotly-log-vs-linear"
+name = "plotly-lvlos"
 description = "Animated comparison of linear vs logarithmic x-scale effects"
 output_dir = "build"
 

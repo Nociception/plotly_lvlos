@@ -1,0 +1,21 @@
+[project]
+name = "test-project"
+description = "A valid test configuration"
+output_dir = "build"
+
+[data.core]
+x_file = "data/x.csv"
+y_file = "data/y.csv"
+entity_column = "entity"
+year_column = "year"
+
+[analysis]
+min_points_per_year = 5
+
+[enrichment.population]
+file = "data/population.csv"
+column = "population"
+
+[visualization]
+width = 800
+height = 600

@@ -1,6 +1,7 @@
 from pathlib import Path
+import tomllib
 
-from plotly_lvlos.utils.errors import ConfigFileNotFound
+from plotly_lvlos.utils.errors import ConfigFileNotFound, ConfigFileInvalid
 
 
 def load_config(path):
@@ -9,4 +10,8 @@ def load_config(path):
     if not path.exists():
         raise ConfigFileNotFound(f"Config file not found: {path}")
 
-    return {}
+    try:
+        with path.open("rb") as f:
+            return tomllib.load(f)
+    except tomllib.TOMLDecodeError as exc:
+        raise ConfigFileInvalid(f"Invalid TOML config: {path}") from exc

@@ -17,3 +17,16 @@ def test_load_config_returns_empty_dict_for_empty_file(tmp_path):
     assert error_raised is False
     assert isinstance(result, dict)
     assert result == {}
+
+
+def test_load_config_raises_for_nonexistent_file(tmp_path):
+    config_file = tmp_path / "missing.toml"
+
+    error_raised = False
+
+    try:
+        load_config(config_file)
+    except ConfigError:
+        error_raised = True
+
+    assert error_raised is True

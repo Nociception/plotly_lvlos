@@ -1,2 +1,10 @@
+from pathlib import Path
+
+
 def load_config(path):
-    pass
+    path = Path(path)
+
+    if path.exists():
+        return {}
+
+    raise FileNotFoundError

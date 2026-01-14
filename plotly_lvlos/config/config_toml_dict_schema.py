@@ -28,11 +28,13 @@ IMPORTANT:
 - This is NOT meant to be mutated at runtime
 """
 
-
 CONFIG_TOML_DICT_SCHEMA = {
     "project": {
         "name": "plotly-lvlos",
-        "description": "Animated comparison of linear vs logarithmic x-scale effects",
+        "description": """
+        Animated comparison of linear
+        vs logarithmic x-scale effects
+        """,
         "output_dir": "build",
     },
     "data": {
@@ -41,7 +43,7 @@ CONFIG_TOML_DICT_SCHEMA = {
         "extra_data_point_file": "data/edpf.csv",
         "extra_data_x_file": "data/edxf.csv",
         "entity_column": "country",
-        "overlap_column": "year",  
+        "overlap_column": "year",
     },
     "analysis": {
         "min_points_per_year": 5,
@@ -51,5 +53,5 @@ CONFIG_TOML_DICT_SCHEMA = {
         "height": 800,
         "frame_duration_ms": 300,
         "transition_duration_ms": 0,
-    }
+    },
 }

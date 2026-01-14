@@ -3,6 +3,7 @@ from plotly_lvlos.errors.errors_config import (
     ConfigUnexpectedSection,
     ConfigMissingKey,
     ConfigUnexpectedKey,
+    ConfigInvalidValueType,
 )
 from plotly_lvlos.config.config_toml_dict_schema import CONFIG_TOML_DICT_SCHEMA
 
@@ -28,5 +29,16 @@ def parse_config_toml_dict(toml_dict):
 
         if not dict_keys.issubset(schema_keys):
             raise ConfigUnexpectedKey
+
+        for key, reference_value in section_schema.items():
+            expected_type = type(reference_value)
+            actual_value = section_dict[key]
+
+            if not isinstance(actual_value, expected_type):
+                raise ConfigInvalidValueType(
+                    f"Invalid type for '{section_name}.{key}': "
+                    f"expected {expected_type.__name__}, "
+                    f"got {type(actual_value).__name__}"
+                )
 
     return True

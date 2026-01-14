@@ -1,4 +1,5 @@
 import pytest
+import copy
 
 from plotly_lvlos.config.parse_config_toml_dict import parse_config_toml_dict
 from plotly_lvlos.config.config_toml_dict_schema import CONFIG_TOML_DICT_SCHEMA
@@ -105,8 +106,7 @@ def test_parse_toml_dict_fails_when_value_has_invalid_type(
     Any key with a value of an invalid type must raise ConfigInvalidValueType.
     """
 
-    test_dict = valid_config_dict.copy()
-    test_dict[section_name] = test_dict[section_name].copy()
+    test_dict = copy.deepcopy(valid_config_dict)
 
     reference_value = CONFIG_TOML_DICT_SCHEMA[section_name][key_name]
     expected_type = type(reference_value)
@@ -114,7 +114,7 @@ def test_parse_toml_dict_fails_when_value_has_invalid_type(
     if expected_type is int:
         test_dict[section_name][key_name] = "not an int"
     else:
-        test_dict[section_name][key_name] = 123
+        test_dict[section_name][key_name] = 42
 
     with pytest.raises(ConfigInvalidValueType):
         parse_config_toml_dict(test_dict)

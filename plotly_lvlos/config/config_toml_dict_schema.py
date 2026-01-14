@@ -57,6 +57,25 @@ CONFIG_TOML_DICT_SCHEMA = {
 }
 
 CONFIG_TOML_DICT_SCHEMA_CONSTRAINTS = {
+    # "project": {
+    #     "name": {
+    #         "length_min": 1,
+    #         "length_max": 100,
+    #     }
+    #     "description": """
+    #     Animated comparison of linear
+    #     vs logarithmic x-scale effects
+    #     """,  # str
+    #     "output_dir": "build",  # str
+    # },
+    # "data": {
+    #     "x_file": "data/x.csv",  # str
+    #     "y_file": "data/y.csv",  # str
+    #     "extra_data_point_file": "data/edpf.csv",  # str
+    #     "extra_data_x_file": "data/edxf.csv",  # str
+    #     "entity_column": "country",  # str
+    #     "overlap_column": "year",  # str
+    # },
     "analysis": {
         "min_points_per_year": {
             "type": int,

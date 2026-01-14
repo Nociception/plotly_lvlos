@@ -1,6 +1,10 @@
-# Base exception
+# Base exception/waring
 class ConfigError(Exception):
     """Base exception for configuration file issues."""
+
+
+class ConfigWarning(Warning):
+    """Base warning for configuration file issues."""
 
 
 # load_config.py exceptions
@@ -39,4 +43,17 @@ class ConfigValueOutOfBounds(ConfigError):
     Raised when a configuration value is invalid (out of range, etc.).
     Please read the confi_toml_dict_schema.py file
     for the expected structure and values.
+    """
+
+
+class ConfigFileNotFoundFatalError(ConfigError):
+    """
+    Raised when a required data file specified in the configuration is missing.
+    This is considered a fatal error.
+    """
+
+
+class ConfigFileNotFoundWarning(ConfigWarning):
+    """
+    Warns when an optional data file specified in the configuration is missing.
     """

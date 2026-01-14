@@ -8,6 +8,7 @@ from plotly_lvlos.errors.errors_config import (
     ConfigUnexpectedSection,
     ConfigMissingKey,
     ConfigUnexpectedKey,
+    ConfigInvalidValueType,
 )
 
 
@@ -86,4 +87,34 @@ def test_parse_toml_dict_fails_when_unexpected_key_present(
     test_dict[section_name][unexpected_key] = "whatever"
 
     with pytest.raises(ConfigUnexpectedKey):
+        parse_config_toml_dict(test_dict)
+
+
+@pytest.mark.parametrize(
+    "section_name,key_name",
+    [
+        (section, key)
+        for section, keys in CONFIG_TOML_DICT_SCHEMA.items()
+        for key in keys.keys()
+    ],
+)
+def test_parse_toml_dict_fails_when_value_has_invalid_type(
+    valid_config_dict, section_name, key_name
+):
+    """
+    Any key with a value of an invalid type must raise ConfigInvalidValueType.
+    """
+
+    test_dict = valid_config_dict.copy()
+    test_dict[section_name] = test_dict[section_name].copy()
+
+    reference_value = CONFIG_TOML_DICT_SCHEMA[section_name][key_name]
+    expected_type = type(reference_value)
+
+    if expected_type is int:
+        test_dict[section_name][key_name] = "not an int"
+    else:
+        test_dict[section_name][key_name] = 123
+
+    with pytest.raises(ConfigInvalidValueType):
         parse_config_toml_dict(test_dict)

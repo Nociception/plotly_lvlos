@@ -3,7 +3,10 @@ import pytest
 from plotly_lvlos.config.parse_config_toml_dict import parse_config_toml_dict
 from plotly_lvlos.config.config_toml_dict_schema import CONFIG_TOML_DICT_SCHEMA
 
-from plotly_lvlos.errors.errors_config import ConfigMissingSection
+from plotly_lvlos.errors.errors_config import (
+    ConfigMissingSection,
+    ConfigUnexpectedSection,
+)
 
 
 @pytest.fixture
@@ -25,4 +28,18 @@ def test_parse_toml_dict_fails_when_section_missing(valid_config_dict, missing_s
     test_dict.pop(missing_section)
 
     with pytest.raises(ConfigMissingSection):
+        parse_config_toml_dict(test_dict)
+
+
+@pytest.mark.parametrize("extra_section", ["extra1", "extra2", "extra3"])
+def test_parse_toml_dict_fails_when_extra_section_present(
+    valid_config_dict, extra_section
+):
+    """Adding any extra section must raise an error."""
+
+    test_dict = valid_config_dict.copy()
+
+    test_dict[extra_section] = {}
+
+    with pytest.raises(ConfigUnexpectedSection):
         parse_config_toml_dict(test_dict)

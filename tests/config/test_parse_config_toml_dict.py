@@ -5,6 +5,7 @@ from plotly_lvlos.config.config_toml_dict_schema import CONFIG_TOML_DICT_SCHEMA
 
 from plotly_lvlos.errors.errors_config import ConfigMissingSection
 
+
 @pytest.fixture
 def valid_config_dict():
     return CONFIG_TOML_DICT_SCHEMA.copy()

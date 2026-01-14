@@ -5,6 +5,10 @@ from plotly_lvlos.config.config_toml_dict_schema import CONFIG_TOML_DICT_SCHEMA
 
 from plotly_lvlos.errors.errors_config import ConfigMissingSection
 
+@pytest.fixture
+def valid_config_dict():
+    return CONFIG_TOML_DICT_SCHEMA.copy()
+
 
 def test_parse_toml_dict_passes_for_valid_dict(valid_config_dict):
     """The valid config should pass validation"""

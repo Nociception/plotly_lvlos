@@ -30,28 +30,60 @@ IMPORTANT:
 
 CONFIG_TOML_DICT_SCHEMA = {
     "project": {
-        "name": "plotly-lvlos",
+        "name": "plotly-lvlos",  # str
         "description": """
         Animated comparison of linear
         vs logarithmic x-scale effects
-        """,
-        "output_dir": "build",
+        """,  # str
+        "output_dir": "build",  # str
     },
     "data": {
-        "x_file": "data/x.csv",
-        "y_file": "data/y.csv",
-        "extra_data_point_file": "data/edpf.csv",
-        "extra_data_x_file": "data/edxf.csv",
-        "entity_column": "country",
-        "overlap_column": "year",
+        "x_file": "data/x.csv",  # str
+        "y_file": "data/y.csv",  # str
+        "extra_data_point_file": "data/edpf.csv",  # str
+        "extra_data_x_file": "data/edxf.csv",  # str
+        "entity_column": "country",  # str
+        "overlap_column": "year",  # str
     },
     "analysis": {
-        "min_points_per_year": 5,
+        "min_points_per_year": 5,  # int
     },
     "visualization": {
-        "width": 1200,
-        "height": 800,
-        "frame_duration_ms": 300,
-        "transition_duration_ms": 0,
+        "width": 1200,  # int
+        "height": 800,  # int
+        "frame_duration_ms": 300,  # int
+        "transition_duration_ms": 0,  # int
+    },
+}
+
+CONFIG_TOML_DICT_SCHEMA_CONSTRAINTS = {
+    "analysis": {
+        "min_points_per_year": {
+            "type": int,
+            "min": 2,
+            "max": 100,
+        },
+    },
+    "visualization": {
+        "width": {
+            "type": int,
+            "min": 100,
+            "max": 10000,
+        },
+        "height": {
+            "type": int,
+            "min": 100,
+            "max": 10000,
+        },
+        "frame_duration_ms": {
+            "type": int,
+            "min": 10,
+            "max": 10000,
+        },
+        "transition_duration_ms": {
+            "type": int,
+            "min": 0,
+            "max": 10000,
+        },
     },
 }

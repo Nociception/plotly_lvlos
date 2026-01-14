@@ -31,3 +31,12 @@ class ConfigUnexpectedKey(ConfigError):
 
 class ConfigInvalidValueType(ConfigError):
     """Raised when a section has an invalid type."""
+
+
+# validate_config_values.py exceptions
+class ConfigValueOutOfBounds(ConfigError):
+    """
+    Raised when a configuration value is invalid (out of range, etc.).
+    Please read the confi_toml_dict_schema.py file
+    for the expected structure and values.
+    """

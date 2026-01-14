@@ -1,6 +1,7 @@
 from plotly_lvlos.errors.errors_config import (
     ConfigMissingSection,
     ConfigUnexpectedSection,
+    ConfigMissingKey,
 )
 from plotly_lvlos.config.config_toml_dict_schema import CONFIG_TOML_DICT_SCHEMA
 
@@ -14,4 +15,12 @@ def parse_config_toml_dict(toml_dict):
     for section in toml_dict.keys():
         if section not in CONFIG_TOML_DICT_SCHEMA:
             raise ConfigUnexpectedSection
+
+    for section_name, section_schema in CONFIG_TOML_DICT_SCHEMA.items():
+        section_dict = toml_dict[section_name]
+
+        for key in section_schema.keys():
+            if key not in section_dict:
+                raise ConfigMissingKey
+
     return True

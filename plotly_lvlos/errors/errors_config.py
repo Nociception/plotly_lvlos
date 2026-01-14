@@ -33,19 +33,7 @@ class ConfigUnexpectedKey(ConfigError):
     """Raised when an unexpected key is found in a configuration section."""
 
 
-class ConfigInvalidValueType(ConfigError):
-    """Raised when a section has an invalid type."""
-
-
 # validate_config_values.py exceptions
-class ConfigValueOutOfBounds(ConfigError):
-    """
-    Raised when a configuration value is invalid (out of range, etc.).
-    Please read the confi_toml_dict_schema.py file
-    for the expected structure and values.
-    """
-
-
 class ConfigFileNotFoundFatalError(ConfigError):
     """
     Raised when a required data file specified in the configuration is missing.
@@ -57,3 +45,42 @@ class ConfigFileNotFoundWarning(ConfigWarning):
     """
     Warns when an optional data file specified in the configuration is missing.
     """
+
+
+class ConfigValueOutOfBounds(ConfigError):
+    """
+    Raised when a configuration value is invalid (out of range, etc.).
+    Please read the confi_toml_dict_schema.py file
+    for the expected structure and values.
+    """
+
+
+class ConfigConstraintError(ConfigError):
+    """
+    Raised when a configuration value violates declared constraints.
+    """
+
+    def __init__(
+        self,
+        section: str,
+        key: str,
+        value,
+        constraints: dict,
+    ):
+        self.section = section
+        self.key = key
+        self.value = value
+        self.constraints = constraints
+
+        constraint_lines = "\n".join(
+            f"- {name}: {repr(val)}" for name, val in constraints.items()
+        )
+
+        message = (
+            f"Invalid value for config field "
+            f"[{section}.{key}]\n"
+            f"Value: {repr(value)}\n"
+            f"Constraints:\n{constraint_lines}"
+        )
+
+        super().__init__(message)

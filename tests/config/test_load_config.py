@@ -1,5 +1,5 @@
 from plotly_lvlos.config.load_config import load_config
-from plotly_lvlos.utils.errors import ConfigError, ConfigFileNotFound, ConfigFileInvalid
+from plotly_lvlos.errors.errors_config import ConfigError, ConfigFileNotFound, ConfigFileInvalid
 
 
 def test_load_config_returns_empty_dict_for_empty_file(tmp_path):

@@ -7,6 +7,7 @@ from plotly_lvlos.errors.errors_config import (
     ConfigMissingSection,
     ConfigUnexpectedSection,
     ConfigMissingKey,
+    ConfigUnexpectedKey,
 )
 
 
@@ -67,4 +68,22 @@ def test_parse_toml_dict_fails_when_key_missing(
     test_dict[section_name] = section_dict
 
     with pytest.raises(ConfigMissingKey):
+        parse_config_toml_dict(test_dict)
+
+
+@pytest.mark.parametrize(
+    "section_name, unexpected_key",
+    [(section, "unexpected_key") for section in CONFIG_TOML_DICT_SCHEMA.keys()],
+)
+def test_parse_toml_dict_fails_when_unexpected_key_present(
+    valid_config_dict, section_name, unexpected_key
+):
+    """Adding any unexpected key inside a section must raise an error."""
+
+    test_dict = valid_config_dict.copy()
+    test_dict[section_name] = test_dict[section_name].copy()
+
+    test_dict[section_name][unexpected_key] = "whatever"
+
+    with pytest.raises(ConfigUnexpectedKey):
         parse_config_toml_dict(test_dict)

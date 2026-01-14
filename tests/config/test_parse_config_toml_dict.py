@@ -6,6 +6,7 @@ from plotly_lvlos.config.config_toml_dict_schema import CONFIG_TOML_DICT_SCHEMA
 from plotly_lvlos.errors.errors_config import (
     ConfigMissingSection,
     ConfigUnexpectedSection,
+    ConfigMissingKey,
 )
 
 
@@ -42,4 +43,28 @@ def test_parse_toml_dict_fails_when_extra_section_present(
     test_dict[extra_section] = {}
 
     with pytest.raises(ConfigUnexpectedSection):
+        parse_config_toml_dict(test_dict)
+
+
+@pytest.mark.parametrize(
+    "section_name,key_name",
+    [
+        (section, key)
+        for section, keys in CONFIG_TOML_DICT_SCHEMA.items()
+        for key in keys.keys()
+    ],
+)
+def test_parse_toml_dict_fails_when_key_missing(
+    valid_config_dict, section_name, key_name
+):
+    """Removing any required key must raise ConfigMissingKey."""
+
+    test_dict = valid_config_dict.copy()
+
+    section_dict = test_dict[section_name].copy()
+    section_dict.pop(key_name)
+
+    test_dict[section_name] = section_dict
+
+    with pytest.raises(ConfigMissingKey):
         parse_config_toml_dict(test_dict)

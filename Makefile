@@ -17,7 +17,7 @@ build:
 
 test:
 	@echo "Running tests..."
-	$(PYTHON) -m pytest $(TEST_DIR) --maxfail=1 --disable-warnings -v
+	$(PYTHON) -m pytest $(TEST_DIR) --disable-warnings -v
 
 lint:
 	@echo "Running lint..."

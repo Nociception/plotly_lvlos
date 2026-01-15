@@ -1,3 +1,5 @@
+import pytest
+
 from plotly_lvlos.config.load_config import load_config
 from plotly_lvlos.errors.errors_config import (
     ConfigError,
@@ -6,45 +8,24 @@ from plotly_lvlos.errors.errors_config import (
 )
 
 
-def test_load_config_returns_empty_dict_for_empty_file(tmp_path):
+def test_load_config_raises_for_empty_file(tmp_path):
     config_file = tmp_path / "config.toml"
     config_file.write_text("")
 
-    result = None
-    error_raised = False
-
-    try:
-        result = load_config(config_file)
-    except ConfigError:
-        error_raised = True
-
-    assert error_raised is False
-    assert isinstance(result, dict)
-    assert result == {}
+    with pytest.raises(ConfigError):
+        load_config(config_file)
 
 
 def test_load_config_raises_for_nonexistent_file(tmp_path):
     config_file = tmp_path / "missing.toml"
 
-    error_raised = False
-
-    try:
+    with pytest.raises(ConfigFileNotFound):
         load_config(config_file)
-    except ConfigFileNotFound:
-        error_raised = True
-
-    assert error_raised is True
 
 
 def test_load_config_raises_for_invalid_toml(tmp_path):
     config_file = tmp_path / "invalid.toml"
     config_file.write_text("This is not valid TOML content")
 
-    error_raised = False
-
-    try:
+    with pytest.raises(ConfigFileInvalid):
         load_config(config_file)
-    except ConfigFileInvalid:
-        error_raised = True
-
-    assert error_raised is True

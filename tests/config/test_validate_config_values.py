@@ -4,14 +4,13 @@ import copy
 
 from plotly_lvlos.config.validate_config_values import (
     validate_config_values,
-    validate_file_exists,
+    _validate_file_exists,
 )
 from plotly_lvlos.config.config_toml_dict_schema import (
     CONFIG_TOML_DICT_SCHEMA,
     CONFIG_TOML_DICT_SCHEMA_CONSTRAINTS,
 )
 from plotly_lvlos.errors.errors_config import (
-    ConfigValueOutOfBounds,
     ConfigFileNotFoundFatalError,
     ConfigFileNotFoundWarning,
     ConfigConstraintError,
@@ -30,7 +29,7 @@ def test_mandatory_data_file_missing_raises(valid_config_dict, file_key):
     test_dict["data"][file_key] = "nonexistent_file.csv"
 
     with pytest.raises(ConfigFileNotFoundFatalError):
-        validate_file_exists(test_dict["data"][file_key], mandatory=True)
+        _validate_file_exists(test_dict["data"][file_key], mandatory=True)
 
 
 @pytest.mark.parametrize("file_key", ["extra_data_point_file", "extra_data_x_file"])
@@ -40,7 +39,7 @@ def test_optional_data_file_missing_warns(valid_config_dict, file_key):
     test_dict["data"][file_key] = "nonexistent_file.csv"
 
     with pytest.warns(ConfigFileNotFoundWarning):
-        validate_file_exists(test_dict["data"][file_key], mandatory=False)
+        _validate_file_exists(test_dict["data"][file_key], mandatory=False)
 
 
 @pytest.mark.parametrize(

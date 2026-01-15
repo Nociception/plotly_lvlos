@@ -11,7 +11,7 @@ from plotly_lvlos.errors.errors_config import (
 )
 
 
-def validate_file_exists(file_path, mandatory: bool = True):
+def _validate_file_exists(file_path, mandatory: bool = True):
     path = Path(file_path)
     if not path.exists():
         if mandatory:
@@ -23,7 +23,24 @@ def validate_file_exists(file_path, mandatory: bool = True):
                 f"Optional config file not found: {file_path}",
                 ConfigFileNotFoundWarning,
             )
-    return True
+
+
+def validate_files_exist(config_dict):
+    data_section = config_dict.get("data", {})
+    if data_section:
+        x_file = data_section.get("x_file")
+        y_file = data_section.get("y_file")
+        extra_data_point_file = data_section.get("extra_data_point_file")
+        extra_data_x_file = data_section.get("extra_data_x_file")
+
+        _validate_file_exists(x_file, mandatory=True)
+        _validate_file_exists(y_file, mandatory=True)
+
+        if extra_data_point_file:
+            _validate_file_exists(extra_data_point_file, mandatory=False)
+
+        if extra_data_x_file:
+            _validate_file_exists(extra_data_x_file, mandatory=False)
 
 
 def validate_config_values(config_dict):
@@ -74,5 +91,3 @@ def validate_config_values(config_dict):
                         value=value,
                         constraints=constraints,
                     )
-
-    return True

@@ -28,5 +28,3 @@ def parse_config_toml_dict(toml_dict):
 
         if not dict_keys.issubset(schema_keys):
             raise ConfigUnexpectedKey
-
-    return True

@@ -18,7 +18,7 @@ def valid_config_dict():
 
 def test_parse_toml_dict_passes_for_valid_dict(valid_config_dict):
     """The valid config should pass validation"""
-    assert parse_config_toml_dict(valid_config_dict) is True
+    assert parse_config_toml_dict(valid_config_dict) is None
 
 
 @pytest.mark.parametrize("missing_section", CONFIG_TOML_DICT_SCHEMA.keys())

@@ -1,0 +1,21 @@
+[project]
+name = "plotly-lvlos"
+description = "Animated comparison of linear vs logarithmic x-scale effects"
+output_dir = "build"
+
+[data]
+x_file = "data/gdppercapita_ppp_inflation_adjusted.csv"
+y_file = "data/life_expectancy_years.csv"
+extra_data_point_file = "data/population_total.csv"
+extra_data_x_file = "data/Gini_coefficient.csv"
+entity_column = "country"
+overlap_column = "year"
+
+[analysis]
+min_points_per_year = 5
+
+[visualization]
+width = 1200
+height = 800
+frame_duration_ms = 300
+transition_duration_ms = 0

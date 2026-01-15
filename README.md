@@ -1,7 +1,131 @@
-Choice : so far, handle only csv input datafiles
+PLOTLY-LVLOS
+
+Plotly-LVLOS is a Python project for generating interactive visualizations comparing linear and logarithmic x-scales on time series.
+This branch load_parse_config.toml focuses on loading and validating configuration.
+
+Table of contents:
+
+Installation
+
+Project structure
+
+Configuration
+
+Usage
+
+Validation and constraints
+
+Tests
+
+Future work
+
+CONFIGURATION
+
+The project relies on a config.toml file.
+The expected sections and keys are defined in CONFIG_TOML_DICT_SCHEMA.
+
+Example minimal config.toml:
+
+[project]
+name = "plotly-lvlos"
+description = "Animated comparison of linear vs logarithmic x-scale effects"
+output_dir = "build"
+
+[data]
+x_file = "data/x.csv"
+y_file = "data/y.csv"
+extra_data_point_file = "data/edpf.csv"
+extra_data_x_file = "data/edxf.csv"
+entity_column = "country"
+overlap_column = "year"
+
+[analysis]
+min_points_per_year = 5
+
+[visualization]
+width = 1200
+height = 800
+frame_duration_ms = 300
+transition_duration_ms = 0
+
+USAGE
+
+from plotly_lvlos.build import build
+
+build("config.toml")
+
+Current pipeline steps:
+
+Load the TOML file (load_config)
+
+Validate sections, keys and values (parse_config_toml_dict, validate_config_values)
+
+Check existence of required files (validate_files_exist)
+
+Future steps: data loading and HTML generation using Plotly.
+
+VALIDATION AND CONSTRAINTS
+
+Types, string lengths, and numeric bounds are checked using CONFIG_TOML_DICT_SCHEMA_CONSTRAINTS.
+
+Mandatory files must exist, optional files raise a warning if missing.
+
+Violations raise specific exceptions:
+
+ConfigConstraintError
+
+ConfigFileNotFoundFatalError
+
+ConfigFileNotFoundWarning
+
+TESTS
+
+Uses pytest, covering:
+
+Required sections and keys
+
+String constraints (len_min, len_max, strip)
+
+Numeric constraints (min, max)
+
+File existence
+
+Run tests:
+
+pytest tests --disable-warnings -v
+
+FUTURE WORK
+
+Load and merge CSV data files
+
+Generate interactive Plotly HTML output from data
+
+Optionally add filtering and animation features
 
 
-Why a materialized core table?
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+# Choice : so far, handle only csv input datafiles
+
+
+# Why a materialized core table?
 
 This project relies on a materialized core table as the primary analytical dataset used to generate Plotly animation frames.
 
@@ -50,3 +174,7 @@ simplify reasoning about temporal data completeness,
 and remain reusable for further exploratory analysis if the project is extended.
 
 This choice reflects a common data engineering trade-off: preferring a denormalized analytical dataset when it improves clarity, reusability, and downstream simplicity without introducing meaningful cost or ambiguity.
+
+
+# why a public repo during dev
+because rule set is not effective with a free plan on a private repo

@@ -11,11 +11,6 @@ from plotly_lvlos.errors.errors_config import (
 )
 
 
-@pytest.fixture
-def valid_config_dict() -> dict:
-    return CONFIG_TOML_DICT_SCHEMA.copy()
-
-
 def test_parse_toml_dict_passes_for_valid_dict(valid_config_dict: dict) -> None:
     """The valid config should pass validation"""
     assert parse_config_toml_dict(valid_config_dict) is None

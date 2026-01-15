@@ -4,11 +4,8 @@ import tomllib
 from typeguard import typechecked
 
 from plotly_lvlos.config.parse_config_toml_dict import parse_config_toml_dict
-from plotly_lvlos.config.validate_config_values import (
-    validate_config_values,
-    validate_files_exist,
-)
-
+from plotly_lvlos.config.validate_config_values import validate_config_values
+from plotly_lvlos.config.validate_files_exist import validate_files_exist
 from plotly_lvlos.errors.errors_config import (
     ConfigFileNotFound,
     ConfigFileInvalid,

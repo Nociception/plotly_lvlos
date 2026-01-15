@@ -10,5 +10,6 @@ dependencies = [
     "flake8>=7.3.0",
     "plotly>=6.5.0",
     "pytest>=9.0.2",
+    "tomli-w>=1.2.0",
     "typeguard>=4.4.4",
 ]

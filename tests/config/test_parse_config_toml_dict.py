@@ -12,20 +12,22 @@ from plotly_lvlos.errors.errors_config import (
 
 
 @pytest.fixture
-def valid_config_dict():
+def valid_config_dict() -> dict:
     return CONFIG_TOML_DICT_SCHEMA.copy()
 
 
-def test_parse_toml_dict_passes_for_valid_dict(valid_config_dict):
+def test_parse_toml_dict_passes_for_valid_dict(valid_config_dict: dict) -> None:
     """The valid config should pass validation"""
     assert parse_config_toml_dict(valid_config_dict) is None
 
 
 @pytest.mark.parametrize("missing_section", CONFIG_TOML_DICT_SCHEMA.keys())
-def test_parse_toml_dict_fails_when_section_missing(valid_config_dict, missing_section):
+def test_parse_toml_dict_fails_when_section_missing(
+    valid_config_dict: dict, missing_section: str
+) -> None:
     """Removing any section must raise an error."""
 
-    test_dict = valid_config_dict.copy()
+    test_dict: dict = valid_config_dict.copy()
 
     test_dict.pop(missing_section)
 
@@ -35,8 +37,8 @@ def test_parse_toml_dict_fails_when_section_missing(valid_config_dict, missing_s
 
 @pytest.mark.parametrize("extra_section", ["extra1", "extra2", "extra3"])
 def test_parse_toml_dict_fails_when_extra_section_present(
-    valid_config_dict, extra_section
-):
+    valid_config_dict: dict, extra_section: str
+) -> None:
     """Adding any extra section must raise an error."""
 
     test_dict = valid_config_dict.copy()
@@ -56,13 +58,13 @@ def test_parse_toml_dict_fails_when_extra_section_present(
     ],
 )
 def test_parse_toml_dict_fails_when_key_missing(
-    valid_config_dict, section_name, key_name
-):
+    valid_config_dict: dict, section_name: str, key_name: str
+) -> None:
     """Removing any required key must raise ConfigMissingKey."""
 
-    test_dict = valid_config_dict.copy()
+    test_dict: dict = valid_config_dict.copy()
 
-    section_dict = test_dict[section_name].copy()
+    section_dict: dict = test_dict[section_name].copy()
     section_dict.pop(key_name)
 
     test_dict[section_name] = section_dict
@@ -76,11 +78,11 @@ def test_parse_toml_dict_fails_when_key_missing(
     [(section, "unexpected_key") for section in CONFIG_TOML_DICT_SCHEMA.keys()],
 )
 def test_parse_toml_dict_fails_when_unexpected_key_present(
-    valid_config_dict, section_name, unexpected_key
-):
+    valid_config_dict: dict, section_name: str, unexpected_key: str
+) -> None:
     """Adding any unexpected key inside a section must raise an error."""
 
-    test_dict = valid_config_dict.copy()
+    test_dict: dict = valid_config_dict.copy()
     test_dict[section_name] = test_dict[section_name].copy()
 
     test_dict[section_name][unexpected_key] = "whatever"

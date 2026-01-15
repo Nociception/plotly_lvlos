@@ -18,13 +18,17 @@ from plotly_lvlos.errors.errors_config import (
 
 
 @pytest.fixture
-def valid_config_dict():
+def valid_config_dict() -> dict:
+    """Provide a valid configuration dictionary fixture for tests."""
     return CONFIG_TOML_DICT_SCHEMA.copy()
 
 
 @pytest.mark.parametrize("file_key", ["x_file", "y_file"])
-def test_mandatory_data_file_missing_raises(valid_config_dict, file_key):
-    test_dict = copy.deepcopy(valid_config_dict)
+def test_mandatory_data_file_missing_raises(
+    valid_config_dict: dict, file_key: str
+) -> None:
+    """Check that missing mandatory data files raise a fatal error."""
+    test_dict: dict = copy.deepcopy(valid_config_dict)
 
     test_dict["data"][file_key] = "nonexistent_file.csv"
 
@@ -33,8 +37,11 @@ def test_mandatory_data_file_missing_raises(valid_config_dict, file_key):
 
 
 @pytest.mark.parametrize("file_key", ["extra_data_point_file", "extra_data_x_file"])
-def test_optional_data_file_missing_warns(valid_config_dict, file_key):
-    test_dict = copy.deepcopy(valid_config_dict)
+def test_optional_data_file_missing_warns(
+    valid_config_dict: dict, file_key: str
+) -> None:
+    """Check that missing optional data files trigger a warning."""
+    test_dict: dict = copy.deepcopy(valid_config_dict)
 
     test_dict["data"][file_key] = "nonexistent_file.csv"
 
@@ -51,10 +58,13 @@ def test_optional_data_file_missing_warns(valid_config_dict, file_key):
         if constraints.get("type") is str and "len_min" in constraints
     ],
 )
-def test_string_len_min_constraint(section, key, constraints, valid_config_dict):
+def test_string_len_min_constraint(
+    section: str, key: str, constraints: dict, valid_config_dict: dict
+) -> None:
+    """Check that strings shorter than len_min raise a ConfigConstraintError."""
     test_dict = copy.deepcopy(valid_config_dict)
 
-    invalid_value = ""
+    invalid_value: str = ""
     test_dict[section][key] = invalid_value
 
     if constraints["len_min"] == 0:
@@ -75,10 +85,13 @@ def test_string_len_min_constraint(section, key, constraints, valid_config_dict)
         if constraints.get("type") is str and "len_max" in constraints
     ],
 )
-def test_string_len_max_constraint(section, key, constraints, valid_config_dict):
-    test_dict = copy.deepcopy(valid_config_dict)
+def test_string_len_max_constraint(
+    section: str, key: str, constraints: dict, valid_config_dict: dict
+) -> None:
+    """Check that strings longer than len_max raise a ConfigConstraintError."""
+    test_dict: dict = copy.deepcopy(valid_config_dict)
 
-    invalid_value = "a" * (constraints["len_max"] + 1)
+    invalid_value: str = "a" * (constraints["len_max"] + 1)
     test_dict[section][key] = invalid_value
 
     with pytest.raises(ConfigConstraintError):
@@ -96,8 +109,11 @@ def test_string_len_max_constraint(section, key, constraints, valid_config_dict)
         and constraints.get("len_min", 0) > 0
     ],
 )
-def test_string_strip_constraint(section, key, constraints, valid_config_dict):
-    test_dict = copy.deepcopy(valid_config_dict)
+def test_string_strip_constraint(
+    section: str, key: str, constraints: dict, valid_config_dict: dict
+) -> None:
+    """Check that strings containing only whitespace raise a ConfigConstraintError."""
+    test_dict: dict = copy.deepcopy(valid_config_dict)
 
     test_dict[section][key] = "   \n\t  "
 
@@ -114,8 +130,11 @@ def test_string_strip_constraint(section, key, constraints, valid_config_dict):
         if constraints.get("type") is int and "min" in constraints
     ],
 )
-def test_int_min_constraint(section, key, constraints, valid_config_dict):
-    test_dict = copy.deepcopy(valid_config_dict)
+def test_int_min_constraint(
+    section: str, key: str, constraints: dict, valid_config_dict: dict
+) -> None:
+    """Check that integers below the min value raise a ConfigConstraintError."""
+    test_dict: dict = copy.deepcopy(valid_config_dict)
 
     test_dict[section][key] = constraints["min"] - 1
 
@@ -132,8 +151,11 @@ def test_int_min_constraint(section, key, constraints, valid_config_dict):
         if constraints.get("type") is int and "max" in constraints
     ],
 )
-def test_int_max_constraint(section, key, constraints, valid_config_dict):
-    test_dict = copy.deepcopy(valid_config_dict)
+def test_int_max_constraint(
+    section: str, key: str, constraints: dict, valid_config_dict: dict
+) -> None:
+    """Check that integers above the max value raise a ConfigConstraintError."""
+    test_dict: dict = copy.deepcopy(valid_config_dict)
 
     test_dict[section][key] = constraints["max"] + 1
 

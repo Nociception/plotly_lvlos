@@ -16,8 +16,36 @@ from plotly_lvlos.errors.errors_config import (
 
 
 @typechecked
-def load_config(path: Path):
+def load_config(path: Path) -> dict:
+    """
+    Load, parse, and validate a TOML configuration file.
 
+    This function orchestrates the full configuration loading pipeline:
+    - file existence check
+    - TOML parsing
+    - structural validation against the schema
+    - value constraint validation
+    - referenced file existence checks
+
+    Parameters
+    ----------
+    path : Path
+        Path to the TOML configuration file.
+
+    Returns
+    -------
+    dict
+        Parsed and validated configuration dictionary.
+
+    Raises
+    ------
+    ConfigFileNotFound
+        If the configuration file does not exist.
+    ConfigFileInvalid
+        If the file is not valid TOML.
+    ConfigError
+        If the configuration structure or values are invalid.
+    """
     if not path.exists():
         raise ConfigFileNotFound(f"Config file not found: {path}")
 

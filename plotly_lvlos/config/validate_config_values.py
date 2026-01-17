@@ -1,11 +1,24 @@
 from plotly_lvlos.config.config_toml_dict_schema import (
     CONFIG_TOML_DICT_SCHEMA_CONSTRAINTS,
 )
-from plotly_lvlos.errors.errors_config import ConfigConstraintError
+from plotly_lvlos.errors.errors_config import (
+    ConfigConstraintError,
+    ConfigOverlapError,
+)
 
 
-def _check_olstart_lt_olend() -> None:
-    pass
+def _check_olstart_lt_olend(overlap_start: int, overlap_end: int) -> None:
+    """
+    Check that overlap_start is less than overlap_end.
+
+    Raises
+    ------
+    ConfigOverlapError
+        If overlap_start is not less than overlap_end.
+    """
+
+    if overlap_start >= overlap_end:
+        raise ConfigOverlapError()
 
 
 def validate_config_values(config_dict: dict) -> None:
@@ -77,4 +90,7 @@ def validate_config_values(config_dict: dict) -> None:
                         constraints=constraints,
                     )
 
-    _check_olstart_lt_olend()
+    _check_olstart_lt_olend(
+        config_dict["data"]["overlap_start"],
+        config_dict["data"]["overlap_end"],
+    )

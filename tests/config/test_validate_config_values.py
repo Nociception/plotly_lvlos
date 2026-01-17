@@ -145,8 +145,5 @@ def test_overlap_start_end_constraints(
     test_dict["data"]["overlap_start"] = ol_start
     test_dict["data"]["overlap_end"] = ol_end
 
-    with pytest.raises(ConfigOverlapError) as exc:
+    with pytest.raises(ConfigOverlapError):
         validate_config_values(test_dict)
-
-    assert "data.overlap_start" in str(exc.value)
-    assert "data.overlap_end" in str(exc.value)

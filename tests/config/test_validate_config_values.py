@@ -7,7 +7,10 @@ from plotly_lvlos.config.validate_config_values import (
 from plotly_lvlos.config.config_toml_dict_schema import (
     CONFIG_TOML_DICT_SCHEMA_CONSTRAINTS,
 )
-from plotly_lvlos.errors.errors_config import ConfigConstraintError
+from plotly_lvlos.errors.errors_config import (
+    ConfigConstraintError,
+    ConfigOverlapError,
+)
 
 
 @pytest.mark.parametrize(
@@ -122,3 +125,28 @@ def test_int_max_constraint(
 
     with pytest.raises(ConfigConstraintError):
         validate_config_values(test_dict)
+
+
+@pytest.mark.parametrize(
+    "ol_start,ol_end",
+    [
+        (2050, 1800),
+        (2000, 1800),
+        (1800, 1800),
+        (2001, 2000),
+    ],
+)
+def test_overlap_start_end_constraints(
+    valid_config_dict: dict, ol_start: int, ol_end: int
+) -> None:
+    """Check that overlap_start is less than overlap_end."""
+    test_dict: dict = copy.deepcopy(valid_config_dict)
+
+    test_dict["data"]["overlap_start"] = ol_start
+    test_dict["data"]["overlap_end"] = ol_end
+
+    with pytest.raises(ConfigOverlapError) as exc:
+        validate_config_values(test_dict)
+
+    assert "data.overlap_start" in str(exc.value)
+    assert "data.overlap_end" in str(exc.value)

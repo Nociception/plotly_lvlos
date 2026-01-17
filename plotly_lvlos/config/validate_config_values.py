@@ -4,6 +4,10 @@ from plotly_lvlos.config.config_toml_dict_schema import (
 from plotly_lvlos.errors.errors_config import ConfigConstraintError
 
 
+def _check_olstart_lt_olend() -> None:
+    pass
+
+
 def validate_config_values(config_dict: dict) -> None:
     """
     Validate configuration values against declared constraints.
@@ -24,6 +28,7 @@ def validate_config_values(config_dict: dict) -> None:
     ConfigConstraintError
         If any configuration value violates its declared constraints.
     """
+
     for section, keys in CONFIG_TOML_DICT_SCHEMA_CONSTRAINTS.items():
         section_dict = config_dict[section]
 
@@ -71,3 +76,5 @@ def validate_config_values(config_dict: dict) -> None:
                         value=value,
                         constraints=constraints,
                     )
+
+    _check_olstart_lt_olend()

@@ -24,6 +24,13 @@ def build(config_path: str) -> None:
     """
     config_dict = load_config(Path(config_path))
 
+    # build_core_data_table()
+    # optionnal_data_enrichment()
+    # build_analytical_table
+    # build_plotly_frames()
+    # build_html()
+
+
     if config_dict:
         for key, value in config_dict.items():
             print(f"{key}: {value}")

@@ -55,6 +55,12 @@ class ConfigValueOutOfBounds(ConfigError):
     """
 
 
+class ConfigOverlapError(ConfigError):
+    """
+    Raised when overlap_start is not less than overlap_end.
+    """
+
+
 class ConfigConstraintError(ConfigError):
     """
     Raised when a configuration value violates declared constraints.

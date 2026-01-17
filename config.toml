@@ -10,6 +10,8 @@ extra_data_point_file = "data/population_total.csv"
 extra_data_x_file = "data/Gini_coefficient.csv"
 entity_column = "country"
 overlap_column = "year"
+overlap_start = 1800
+overlap_end = 2050
 
 [analysis]
 min_points_per_year = 5

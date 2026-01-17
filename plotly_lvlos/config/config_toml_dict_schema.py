@@ -44,6 +44,8 @@ CONFIG_TOML_DICT_SCHEMA = {
         "extra_data_x_file": "data/edxf.csv",  # str
         "entity_column": "country",  # str
         "overlap_column": "year",  # str
+        "overlap_start": 1800,  # int
+        "overlap_end": 2050,  # int
     },
     "analysis": {
         "min_points_per_year": 5,  # int
@@ -113,6 +115,10 @@ CONFIG_TOML_DICT_SCHEMA_CONSTRAINTS = {
             "len_min": 1,
             "len_max": 100,
             "strip": True,
+        },
+        "overlap_start": {"type": int},
+        "overlap_end": {
+            "type": int,
         },
     },
     "analysis": {

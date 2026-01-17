@@ -48,10 +48,10 @@ def load_config(path: Path) -> dict:
 
     try:
         with path.open("rb") as f:
-            return_dict = tomllib.load(f)
-            parse_config_toml_dict(return_dict)
-            validate_config_values(return_dict)
-            validate_files_exist(return_dict)
-            return return_dict
+            toml_dict = tomllib.load(f)
+            parse_config_toml_dict(toml_dict)
+            validate_config_values(toml_dict)
+            validate_files_exist(toml_dict)
+            return toml_dict
     except tomllib.TOMLDecodeError as exc:
         raise ConfigFileInvalid(f"Invalid TOML config: {path}") from exc

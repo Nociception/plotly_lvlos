@@ -1,6 +1,4 @@
-from plotly_lvlos.config.config_toml_dict_schema import (
-    CONFIG_TOML_DICT_SCHEMA_CONSTRAINTS,
-)
+from plotly_lvlos.config import CONFIG_TOML_DICT_SCHEMA_CONSTRAINTS
 from plotly_lvlos.errors.errors_config import (
     ConfigConstraintError,
     ConfigOverlapError,

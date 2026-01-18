@@ -4,9 +4,7 @@ import copy
 from plotly_lvlos.config.validate_config_values import (
     validate_config_values,
 )
-from plotly_lvlos.config.config_toml_dict_schema import (
-    CONFIG_TOML_DICT_SCHEMA_CONSTRAINTS,
-)
+from plotly_lvlos.config import CONFIG_TOML_DICT_SCHEMA_CONSTRAINTS
 from plotly_lvlos.errors.errors_config import (
     ConfigConstraintError,
     ConfigOverlapError,

@@ -4,7 +4,7 @@ from plotly_lvlos.errors.errors_config import (
     ConfigMissingKey,
     ConfigUnexpectedKey,
 )
-from plotly_lvlos.config.config_toml_dict_schema import CONFIG_TOML_DICT_SCHEMA
+from plotly_lvlos.config import CONFIG_TOML_DICT_SCHEMA
 
 
 def parse_config_toml_dict(toml_dict) -> None:

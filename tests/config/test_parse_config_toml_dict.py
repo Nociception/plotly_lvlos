@@ -1,7 +1,7 @@
 import pytest
 
 from plotly_lvlos.config.parse_config_toml_dict import parse_config_toml_dict
-from plotly_lvlos.config.config_toml_dict_schema import CONFIG_TOML_DICT_SCHEMA
+from plotly_lvlos.config import CONFIG_TOML_DICT_SCHEMA
 
 from plotly_lvlos.errors.errors_config import (
     ConfigMissingSection,

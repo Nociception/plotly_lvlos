@@ -3,7 +3,7 @@ import pytest
 from pathlib import Path
 import tomli_w
 
-from plotly_lvlos.config.config_toml_dict_schema import (
+from plotly_lvlos.config import (
     CONFIG_TOML_DICT_SCHEMA,
     CONFIG_TOML_DICT_SCHEMA_CONSTRAINTS,
 )

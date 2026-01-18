@@ -1,7 +1,7 @@
 import pytest
 from pathlib import Path
 
-from plotly_lvlos.config.load_config import load_config
+from plotly_lvlos.config import load_config
 from plotly_lvlos.errors.errors_config import (
     ConfigError,
     ConfigFileNotFound,

@@ -5,7 +5,7 @@ from plotly_lvlos.core_data.load_raw_tables import load_raw_tables
 class PlotlyLvlos:
     def __init__(self, config_dict: dict) -> None:
         self.config_dict = config_dict
-        
+
         self.con = duckdb.connect()
         self.con.close()
 
@@ -25,7 +25,7 @@ class PlotlyLvlos:
             the next column are numerical
             overlap_start and overlap_end exist in both data_x and data_y files
             interval between them is dense in both data files
-        
+
         Fuzz matching
         """
 
@@ -65,7 +65,6 @@ class PlotlyLvlos:
         # )
 
         # self.core_table_name = core_table_name
-
 
     # def optionnal_data_enrichment(self):
     # def build_analytical_table(self):

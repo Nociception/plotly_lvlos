@@ -12,7 +12,7 @@ This module orchestrates the full build pipeline:
 - (future) generate Plotly HTML output
 """
 
-from plotly_lvlos.config.load_config import load_config
+from plotly_lvlos.config import load_config
 from pathlib import Path
 
 from typeguard import typechecked

@@ -31,7 +31,6 @@ def build(config_path: str) -> None:
     # plotly_lvlos.build_plotly_frames()
     # plotly_lvlos.build_html()
 
-
     if config_dict:
         for key, value in config_dict.items():
             print(f"{key}: {value}")

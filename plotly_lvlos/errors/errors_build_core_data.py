@@ -2,8 +2,10 @@
 class ErrorBuildCoreData(Exception):
     """Base exception for core data building issues."""
 
+
 class WarningBuildCoreData(Warning):
     """Base warning for core data building issues."""
+
 
 # validate_entity_first_column.py exceptions
 class EntityColumnError(ErrorBuildCoreData):

@@ -1,8 +1,10 @@
-import duckdb
+from duckdb import DuckDBPyConnection, DuckDBPyRelation
 
 
-def load_raw_tables(con: duckdb.DuckDBPyConnection = None, config: dict = None) -> tuple[duckdb.DuckDBPyRelation, duckdb.DuckDBPyRelation]:
-
+def load_raw_tables(
+    con: DuckDBPyConnection = None,
+    config: dict = None
+) -> tuple[DuckDBPyRelation, DuckDBPyRelation]:
     return (
         con.read_csv(
             config["data"]["x_file"],

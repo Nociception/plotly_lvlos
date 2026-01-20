@@ -1,14 +1,17 @@
 import duckdb
 from plotly_lvlos.core_data.load_raw_tables import load_raw_tables
-from plotly_lvlos.core_data.validate_entity_first_column import validate_entity_first_column
-
+from plotly_lvlos.core_data.validate_entity_first_column import (
+    validate_entity_first_column,
+)
+from plotly_lvlos.core_data.validate_overlap_columns import (
+    validate_overlap_columns
+)
 
 class PlotlyLvlos:
     def __init__(self, config_dict: dict) -> None:
         self.config_dict = config_dict
-        
+
         self.con = duckdb.connect()
-        # self.con.close()
 
         self.core_table: duckdb.DuckDBPyRelation | None = None
         self.metrics_table: duckdb.DuckDBPyRelation | None = None
@@ -27,7 +30,7 @@ class PlotlyLvlos:
             the next column are numerical
             overlap_start and overlap_end exist in both data_x and data_y files
             interval between them is dense in both data files
-        
+
         Fuzz matching
         """
 
@@ -47,13 +50,12 @@ class PlotlyLvlos:
             entity_column=self.config_dict["data"]["entity_column"],
         )
 
-        # validate_overlap_and_density(
-        #     con=self.con,
-        #     data_x_table=data_x_table,
-        #     data_y_table=data_y_table,
-        #     overlap_start=self.config_dict["overlap_start"],
-        #     overlap_end=self.config_dict["overlap_end"],
-        # )
+        validate_overlap_columns(
+            data_x_table=data_x_table,
+            data_y_table=data_y_table,
+            overlap_start=self.config_dict["data"]["overlap_start"],
+            overlap_end=self.config_dict["data"]["overlap_end"],
+        )
 
         # matched_x_table, matched_y_table = resolve_entity_matching(
         #     con=self.con,
@@ -71,7 +73,6 @@ class PlotlyLvlos:
         # )
 
         # self.core_table_name = core_table_name
-
 
     # def optionnal_data_enrichment(self):
     # def build_analytical_table(self):

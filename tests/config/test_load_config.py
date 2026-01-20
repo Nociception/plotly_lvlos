@@ -3,7 +3,7 @@ from pathlib import Path
 
 from plotly_lvlos.config.load_config import load_config
 from plotly_lvlos.errors.errors_config import (
-    ConfigError,
+    ErrorConfig,
     ConfigFileNotFound,
     ConfigFileInvalid,
     ConfigConstraintError,
@@ -12,11 +12,11 @@ from tests.config.conftest import write_valid_config
 
 
 def test_load_config_raises_for_empty_file(tmp_path: Path) -> None:
-    """Verify that load_config raises ConfigError when the file is empty."""
+    """Verify that load_config raises ErrorConfig when the file is empty."""
     config_file: Path = tmp_path / "config.toml"
     config_file.write_text("")
 
-    with pytest.raises(ConfigError):
+    with pytest.raises(ErrorConfig):
         load_config(config_file)
 
 

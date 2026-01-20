@@ -40,7 +40,7 @@ def load_config(path: Path) -> dict:
         If the configuration file does not exist.
     ConfigFileInvalid
         If the file is not valid TOML.
-    ConfigError
+    ErrorConfig
         If the configuration structure or values are invalid.
     """
     if not path.exists():

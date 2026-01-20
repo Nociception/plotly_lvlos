@@ -1,5 +1,5 @@
 # Base exception/waring
-class ConfigError(Exception):
+class ErrorConfig(Exception):
     """Base exception for configuration file issues."""
 
 
@@ -8,33 +8,33 @@ class ConfigWarning(Warning):
 
 
 # load_config.py exceptions
-class ConfigFileNotFound(ConfigError):
+class ConfigFileNotFound(ErrorConfig):
     """Raised when the configuration file is missing."""
 
 
-class ConfigFileInvalid(ConfigError):
+class ConfigFileInvalid(ErrorConfig):
     """Raised when the configuration file is invalid (syntax error, etc.)."""
 
 
 # parse_config_toml_dict.py exceptions
-class ConfigMissingSection(ConfigError):
+class ConfigMissingSection(ErrorConfig):
     """Raised when a required section is missing from the configuration."""
 
 
-class ConfigUnexpectedSection(ConfigError):
+class ConfigUnexpectedSection(ErrorConfig):
     """Raised when an unexpected section is found in the configuration."""
 
 
-class ConfigMissingKey(ConfigError):
+class ConfigMissingKey(ErrorConfig):
     """Raised when a required key is missing from a configuration section."""
 
 
-class ConfigUnexpectedKey(ConfigError):
+class ConfigUnexpectedKey(ErrorConfig):
     """Raised when an unexpected key is found in a configuration section."""
 
 
 # validate_config_values.py exceptions
-class ConfigFileNotFoundFatalError(ConfigError):
+class ConfigFileNotFoundFatalError(ErrorConfig):
     """
     Raised when a required data file specified in the configuration is missing.
     This is considered a fatal error.
@@ -47,7 +47,7 @@ class ConfigFileNotFoundWarning(ConfigWarning):
     """
 
 
-class ConfigValueOutOfBounds(ConfigError):
+class ConfigValueOutOfBounds(ErrorConfig):
     """
     Raised when a configuration value is invalid (out of range, etc.).
     Please read the confi_toml_dict_schema.py file
@@ -55,13 +55,13 @@ class ConfigValueOutOfBounds(ConfigError):
     """
 
 
-class ConfigOverlapError(ConfigError):
+class ConfigOverlapError(ErrorConfig):
     """
     Raised when overlap_start is not less than overlap_end.
     """
 
 
-class ConfigConstraintError(ConfigError):
+class ConfigConstraintError(ErrorConfig):
     """
     Raised when a configuration value violates declared constraints.
     """

@@ -19,17 +19,13 @@ test:
 	@echo "Running tests..."
 	$(PYTHON) -m pytest $(TEST_DIR) --disable-warnings -v
 
-lint:
-	@echo "Running lint..."
-	$(PYTHON) -m flake8 $(SRC_DIR)
-
-format:
-	@echo "Running code formatter..."
-	$(PYTHON) -m black $(SRC_DIR) $(TEST_DIR)
+ruff:
+	@echo "Linting code with ruff..."
+	$(PYTHON) -m ruff check $(SRC_DIR) $(TEST_DIR)
 
 clean:
 	@echo "Cleaning cache..."
 	rm -rf __pycache__ */__pycache__
 
-ci: clean build format lint test
+ci: clean build ruff test
 	@echo "CI tasks completed successfully!"

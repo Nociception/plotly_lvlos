@@ -1,5 +1,6 @@
 import duckdb
 from plotly_lvlos.core_data.load_raw_tables import load_raw_tables
+from plotly_lvlos.core_data.validate_entity_first_column import validate_entity_first_column
 
 
 class PlotlyLvlos:
@@ -7,10 +8,11 @@ class PlotlyLvlos:
         self.config_dict = config_dict
         
         self.con = duckdb.connect()
-        self.con.close()
+        # self.con.close()
 
-        self.core_table_name: str | None = None
-        self.metrics_table_name: str | None = None
+        self.core_table: duckdb.DuckDBPyRelation | None = None
+        self.metrics_table: duckdb.DuckDBPyRelation | None = None
+        self.fuzzmatches_table: duckdb.DuckDBPyRelation | None = None
 
         self.frames = None
 
@@ -34,12 +36,16 @@ class PlotlyLvlos:
             config=self.config_dict,
         )
 
-        # validate_entity_and_numeric_columns(
-        #     con=self.con,
-        #     data_x_table=data_x_table,
-        #     data_y_table=data_y_table,
-        #     entity_column=self.config_dict["entity_column"],
-        # )
+        print("Data X Table Preview:")
+        print(data_x_table)
+        print("\nData Y Table Preview:")
+        print(data_y_table)
+
+        validate_entity_first_column(
+            data_x_table=data_x_table,
+            data_y_table=data_y_table,
+            entity_column=self.config_dict["data"]["entity_column"],
+        )
 
         # validate_overlap_and_density(
         #     con=self.con,

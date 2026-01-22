@@ -1,11 +1,15 @@
 import duckdb
-from plotly_lvlos.core_data.load_raw_tables import load_raw_tables
+from plotly_lvlos.core_data.load_raw_tables import load_core_raw_tables
 from plotly_lvlos.core_data.validate_entity_first_column import (
     validate_entity_first_column,
 )
 from plotly_lvlos.core_data.validate_overlap_columns import (
     validate_overlap_columns
 )
+from plotly_lvlos.core_data.build_matches_table import (
+    build_matches_table,
+)
+
 
 class PlotlyLvlos:
     def __init__(self, config_dict: dict) -> None:
@@ -13,9 +17,12 @@ class PlotlyLvlos:
 
         self.con = duckdb.connect()
 
+        self.data_x_table_label = "data_x"
+        self.data_y_table_label = "data_y"
+
         self.core_table: duckdb.DuckDBPyRelation | None = None
         self.metrics_table: duckdb.DuckDBPyRelation | None = None
-        self.fuzzmatches_table: duckdb.DuckDBPyRelation | None = None
+        self.matches_table: duckdb.DuckDBPyRelation | None = None
 
         self.frames = None
 
@@ -34,19 +41,17 @@ class PlotlyLvlos:
         Fuzz matching
         """
 
-        data_x_table, data_y_table = load_raw_tables(
+        data_x_table, data_y_table = load_core_raw_tables(
             con=self.con,
             config=self.config_dict,
+            data_x_table_label=self.data_x_table_label,
+            data_y_table_label=self.data_y_table_label,
         )
 
-        print("Data X Table Preview:")
-        print(data_x_table)
-        print("\nData Y Table Preview:")
-        print(data_y_table)
-
         validate_entity_first_column(
-            data_x_table=data_x_table,
-            data_y_table=data_y_table,
+            con=self.con,
+            data_x_table_label=self.data_x_table_label,
+            data_y_table_label=self.data_y_table_label,
             entity_column=self.config_dict["data"]["entity_column"],
         )
 
@@ -57,22 +62,17 @@ class PlotlyLvlos:
             overlap_end=self.config_dict["data"]["overlap_end"],
         )
 
-        # matched_x_table, matched_y_table = resolve_entity_matching(
-        #     con=self.con,
-        #     data_x_table=data_x_table,
-        #     data_y_table=data_y_table,
-        #     entity_column=self.config_dict["entity_column"],
-        #     fuzzy=self.config_dict.get("fuzzy_matching", False),
-        # )
+        self.matches_table = build_matches_table(
+            con=self.con,
+            data_x_table_label=self.data_x_table_label,
+            data_y_table_label=self.data_y_table_label,
+            matches_table_path="matches.csv",
+            entity_column=self.config_dict["data"]["entity_column"]
+        )
 
-        # core_table_name = build_core_table(
-        #     con=self.con,
-        #     data_x_table=matched_x_table,
-        #     data_y_table=matched_y_table,
-        #     config=self.config_dict,
-        # )
+        # self.core_table = build_core_table()  # uses matches_table
 
-        # self.core_table_name = core_table_name
+        
 
     # def optionnal_data_enrichment(self):
     # def build_analytical_table(self):

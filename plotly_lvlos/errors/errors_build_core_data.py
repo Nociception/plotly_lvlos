@@ -10,3 +10,7 @@ class WarningBuildCoreData(Warning):
 # validate_entity_first_column.py exceptions
 class EntityColumnError(ErrorBuildCoreData):
     """Raised when the entity_column is not the first column in either data table."""
+
+
+class EntityUniquenessError(ErrorBuildCoreData):
+    """Raised when entities are not unique."""

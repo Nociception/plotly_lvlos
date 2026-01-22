@@ -7,6 +7,12 @@ SRC_DIR = plotly_lvlos
 TEST_DIR = tests
 
 build:
+
+	@if [ -f matches.csv ]; then \
+		echo CAREFUL ! matches.csv is rm each time make is called ! Rm the rm before final push; \
+		rm matches.csv; \
+	fi
+
 	@echo " Building project..."
 	@if [ ! -f $(CONFIG) ]; then \
 		echo "Config file $(CONFIG) not found!"; \

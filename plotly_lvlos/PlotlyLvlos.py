@@ -24,7 +24,8 @@ class PlotlyLvlos:
             con=self.con,
             config_dict=self.config_dict,
         )
-        self.core_table = core_data_builder.build()
+        # self. matches_table, self.core_table = core_data_builder.build()
+        core_data_builder.build()
 
 
         

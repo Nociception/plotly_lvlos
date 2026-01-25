@@ -33,12 +33,6 @@ def build(config_path: str) -> None:
 
     plotly_lvlos.close_connection()
 
-    if config_dict:
-        for key, value in config_dict.items():
-            print(f"{key}: {value}")
-    else:
-        print("No configuration loaded.")
-
 
 if __name__ == "__main__":
     build("config.toml")

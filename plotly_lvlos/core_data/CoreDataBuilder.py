@@ -6,12 +6,12 @@ from plotly_lvlos.core_data.matches_table_decorator import (
 )
 from plotly_lvlos.core_data.DataInfo import DataInfo
 from plotly_lvlos.errors.errors_build_core_data import (
-    FileReadFailure
+    FileReadFailure,
+    EntityColumnFailure,
 )
 #     ErrorBuildCoreData,
 #     ExtraDataFileReadError,
 #     ExtraDataFileReadWarning,
-#     EntityColumnError,
 #     EntityColumnWarning,
 #     EntityUniquenessError,
 #     EntityUniquenessWarning,
@@ -63,8 +63,8 @@ class CoreDataBuilder:
         duckdb.DuckDBPyRelation,
     ]:
         self.load_core_raw_tables()
+        self.validate_entity_first_column_label()
         print(self.con.execute("SHOW TABLES").fetchall())
-        # self.validate_entity_first_column()
 
 
     @matches_table_decorator
@@ -75,7 +75,14 @@ class CoreDataBuilder:
         try:
             self.con.register(
                 table.label,
-                self.con.read_csv(str(table.file), header=True),
+                self.con.read_csv(
+                    str(table.file),
+                    header=True,
+                    delimiter=",",
+                    quotechar='"',
+                    null_padding=True,
+                    strict_mode=False,
+                ),
             )
         except (
             duckdb.IOException,
@@ -87,49 +94,30 @@ class CoreDataBuilder:
             raise FileReadFailure(table, e)
     
 
+    @matches_table_decorator
+    def validate_entity_first_column_label(
+        self,
+        table: DataInfo,
+    ) -> None:
 
-
-
-    # def validate_entity_first_column(self) -> None:
-
-    #     for table_label in (
-    #         self.data_x_table_label,
-    #         self.data_y_table_label,
-    #         self.extra_data_point_table_label,
-    #         self.extra_data_x_table_label,
-    #     ):
-    #         print("#######")
-    #         print(table_label)
-    #         print("#######")
-    #         try:
-    #             first_col = self.con.execute(
-    #                 f"""
-    #                 SELECT
-    #                     name
-    #                 FROM
-    #                     pragma_table_info('{table_label}')
-    #                 ORDER BY
-    #                     cid
-    #                 LIMIT
-    #                     1
-    #                 """
-    #             ).fetchone()[0]
-    #         except TypeError:
-    #             continue
-    #         if first_col != self.entity_column_label:
-    #             fail_text: str =  (
-    #                 f"In table '{table_label}', the first column must be "
-    #                 f"`{self.entity_column_label}`, "
-    #                 f"found `{first_col}` instead."
-    #             )
-    #             if "extra" in table_label:
-    #                 warnings.warn(EntityColumnWarning(fail_text))
-    #                 if "point" in table_label:
-    #                     self.extra_data_point_table_status = False
-    #                 else:
-    #                     self.extra_data_x_table_status = False
-    #             else:
-    #                 raise EntityColumnError(fail_text)
+        first_col = self.con.execute(
+            f"""
+            SELECT
+                name
+            FROM
+                pragma_table_info('{table.label}')
+            ORDER BY
+                cid
+            LIMIT
+                1
+            """
+        ).fetchone()[0]
+        if first_col != self.entity_column_label:
+            raise EntityColumnFailure(
+                f"In table '{table.label}', the first column must be "
+                f"`{self.entity_column_label}`, "
+                f"found `{first_col}` instead."
+            )
 
 
     #         print("#######")

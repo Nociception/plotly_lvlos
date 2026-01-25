@@ -3,7 +3,6 @@ import warnings
 from plotly_lvlos.core_data.DataInfo import DataInfo
 
 
-# Base exception/waring
 class TableValidationFailure(Exception):
     """Base class for all table-related validation failures."""
 
@@ -11,7 +10,6 @@ class TableValidationFailure(Exception):
         warnings.warn(str(self))
 
 
-# load_core_raw_tables exceptions
 class FileReadFailure(TableValidationFailure):
     def __init__(self, table: DataInfo, original_exception: Exception):
         self.label = table.label
@@ -20,6 +18,10 @@ class FileReadFailure(TableValidationFailure):
         super().__init__(
             f"Failed to read file '{self.file}' for table '{self.label}': {original_exception}"
         )
+
+class EntityColumnFailure(TableValidationFailure):
+    def __init__(self, failure_text: str):
+            super().__init__(failure_text)
 
 
 # # validate_entity_first_column.py exceptions

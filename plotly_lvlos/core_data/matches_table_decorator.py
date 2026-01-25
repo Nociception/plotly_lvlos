@@ -3,6 +3,7 @@ from functools import wraps
 from plotly_lvlos.errors.errors_build_core_data import (
     FileReadFailure,
     EntityColumnFailure,
+    EntityUniquenessFailure,
 )
 
 
@@ -17,6 +18,7 @@ def matches_table_decorator(func):
             except (
                 FileReadFailure,
                 EntityColumnFailure,
+                EntityUniquenessFailure,
             ) as e:
                 table.status = False
                 if table.mandatory:

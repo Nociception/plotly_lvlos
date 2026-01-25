@@ -21,7 +21,12 @@ class FileReadFailure(TableValidationFailure):
 
 class EntityColumnFailure(TableValidationFailure):
     def __init__(self, failure_text: str):
-            super().__init__(failure_text)
+        super().__init__(failure_text)
+
+
+class EntityUniquenessFailure(TableValidationFailure):
+    def __init__(self, failure_text: str):
+        super().__init__(failure_text)
 
 
 # # validate_entity_first_column.py exceptions

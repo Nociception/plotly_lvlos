@@ -8,14 +8,9 @@ from plotly_lvlos.core_data.DataInfo import DataInfo
 from plotly_lvlos.errors.errors_build_core_data import (
     FileReadFailure,
     EntityColumnFailure,
+    EntityUniquenessFailure,
 )
-#     ErrorBuildCoreData,
-#     ExtraDataFileReadError,
-#     ExtraDataFileReadWarning,
-#     EntityColumnWarning,
-#     EntityUniquenessError,
-#     EntityUniquenessWarning,
-# )
+from plotly_lvlos.core_data.csv_profiles import CSV_PROFILES
 
 
 class CoreDataBuilder:
@@ -32,28 +27,33 @@ class CoreDataBuilder:
 
         self.con: duckdb.DuckDBPyConnection = con
         self.config_dict: dict = config_dict
-        self.entity_column_label: str = self.config_dict["data"]["entity_column"]
+        config_data: dict = self.config_dict["data"]
+        self.entity_column_label: str = config_data["entity_column"]
 
         self.tables = [
             DataInfo(
                 label="data_x",
-                file=Path(self.config_dict["data"]["x_file"]),
+                file=Path(config_data["x_file"]),
                 mandatory=True,
+                file_profile=config_data["x_file_profile"]
             ),
             DataInfo(
                 label="data_y",
-                file=Path(self.config_dict["data"]["y_file"]),
+                file=Path(config_data["y_file"]),
                 mandatory=True,
+                file_profile=config_data["y_file_profile"]
             ),
             DataInfo(
                 label="extra_data_point",
-                file=Path(self.config_dict["data"]["extra_data_point_file"]),
+                file=Path(config_data["extra_data_point_file"]),
                 mandatory=False,
+                file_profile=config_data["extra_data_point_file_profile"]
             ),
             DataInfo(
                 label="extra_data_x",
-                file=Path(self.config_dict["data"]["extra_data_x_file"]),
+                file=Path(config_data["extra_data_x_file"]),
                 mandatory=False,
+                file_profile=config_data["extra_data_x_file_profile"]
             ),
         ]
 
@@ -64,7 +64,15 @@ class CoreDataBuilder:
     ]:
         self.load_core_raw_tables()
         self.validate_entity_first_column_label()
+        self.validate_first_column_entities()
+
         print(self.con.execute("SHOW TABLES").fetchall())
+        df = self.con.execute(
+            "SELECT * FROM extra_data_x LIMIT 1000"
+        ).df()
+
+        df.to_html("table.html", index=False)
+
 
 
     @matches_table_decorator
@@ -72,6 +80,7 @@ class CoreDataBuilder:
         self,
         table: DataInfo
     ) -> None:
+        profile_kwargs = CSV_PROFILES[table.file_profile]
         try:
             self.con.register(
                 table.label,
@@ -80,8 +89,7 @@ class CoreDataBuilder:
                     header=True,
                     delimiter=",",
                     quotechar='"',
-                    null_padding=True,
-                    strict_mode=False,
+                    **profile_kwargs,
                 ),
             )
         except (
@@ -120,35 +128,28 @@ class CoreDataBuilder:
             )
 
 
-    #         print("#######")
-    #         print(table_label)
-    #         print("#######")
-    #         try:
-    #             total_rows, distinct_entities = self.con.execute(
-    #                 f"""
-    #         SELECT
-    #             COUNT(*) AS total_rows,
-    #             COUNT(DISTINCT {self.entity_column_label}) AS distinct_entities
-    #         FROM
-    #             {table_label}
-    #                 """
-    #             ).fetchone()
-    #         except duckdb.CatalogException:
-    #             if "extra" in table_label:
-    #                 continue
+    @matches_table_decorator
+    def validate_first_column_entities(
+        self,
+        table: DataInfo,
+    ) -> None:
 
-    #         if total_rows != distinct_entities:
-    #             if "extra" in table_label:
-    #                 warnings.warn(EntityUniquenessWarning)
-    #                 if "point" in table_label:
-    #                     self.extra_data_point_table_status = False
-    #                 else:
-    #                     self.extra_data_x_table_status = False
-    #             else:
-    #                 raise EntityUniquenessError(
-    #                     f"In {table_label}, entity column '{self.entity_column_label}' contains duplicated values "
-    #                     f"({total_rows - distinct_entities} duplicate rows detected)."
-    #             )
+        total_rows, distinct_entities = self.con.execute(
+        f"""
+        SELECT
+            COUNT(*) AS total_rows,
+            COUNT(DISTINCT {self.entity_column_label}) AS distinct_entities
+        FROM
+            {table.label}
+        """
+        ).fetchone()
+
+        if total_rows != distinct_entities:
+            raise EntityUniquenessFailure(
+                f"In {table.label}, entity column "
+                f"`{self.entity_column_label}` contains duplicated values "
+                f"({total_rows - distinct_entities} duplicate rows detected)."
+            )
 
 
 

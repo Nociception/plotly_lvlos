@@ -7,4 +7,5 @@ class DataInfo:
     label: str
     file: Path
     mandatory: bool
+    file_profile: str
     status: bool = True

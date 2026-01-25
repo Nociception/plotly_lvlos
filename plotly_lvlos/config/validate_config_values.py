@@ -5,6 +5,7 @@ from plotly_lvlos.errors.errors_config import (
     ConfigConstraintError,
     ConfigOverlapError,
 )
+from plotly_lvlos.core_data.csv_profiles import CSV_PROFILES
 
 
 def _check_olstart_lt_olend(overlap_start: int, overlap_end: int) -> None:
@@ -72,6 +73,17 @@ def validate_config_values(config_dict: dict) -> None:
                         value=value,
                         constraints=constraints,
                     )
+
+                if key.endswith("_profile"):
+                    if value not in CSV_PROFILES:
+                        raise ConfigConstraintError(
+                            section=section,
+                            key=key,
+                            value=value,
+                            constraints={
+                                "allowed_values": list(CSV_PROFILES.keys())
+                            },
+                        )
 
             elif expected_type is int:
                 if "min" in constraints and value < constraints["min"]:

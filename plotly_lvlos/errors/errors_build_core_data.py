@@ -29,21 +29,6 @@ class EntityUniquenessFailure(TableValidationFailure):
         super().__init__(failure_text)
 
 
-# # validate_entity_first_column.py exceptions
-# class EntityColumnError(ErrorBuildCoreData):
-#     """Raised when the entity_column is not the first column in either mandatory data table."""
-#     def __init__(self, fail_text: str):
-#         self.fail_text = fail_text
-#         super().__init__(fail_text)
-
-# class EntityColumnWarning(WarningBuildCoreData):
-#     """Launched when the entity_column is not the first column in either optionnal data table."""
-#     def __init__(self, fail_text: str):
-#         self.fail_text = fail_text
-#         super().__init__(fail_text)
-
-# class EntityUniquenessError(ErrorBuildCoreData):
-#     """Raised when entities are not unique in a mandatory table."""
-
-# class EntityUniquenessWarning(WarningBuildCoreData):
-#     """Launched when entities are not unique in an optionnal table ."""
+class OverlapColumnsFailure(TableValidationFailure):
+    def __init__(self, failure_text: str):
+        super().__init__(failure_text)

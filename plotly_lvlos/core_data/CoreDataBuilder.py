@@ -5,12 +5,17 @@ from plotly_lvlos.core_data.matches_table_decorator import (
     matches_table_decorator
 )
 from plotly_lvlos.core_data.DataInfo import DataInfo
+from plotly_lvlos.core_data.csv_profiles import CSV_PROFILES
+from plotly_lvlos.core_data.validate_overlap_columns import (
+    _overlap_columns_present_in_table,
+    _overlap_columns_indices_order,
+    _overlap_columns_contiguous_int,
+)
 from plotly_lvlos.errors.errors_build_core_data import (
     FileReadFailure,
     EntityColumnFailure,
     EntityUniquenessFailure,
 )
-from plotly_lvlos.core_data.csv_profiles import CSV_PROFILES
 
 
 class CoreDataBuilder:
@@ -27,33 +32,33 @@ class CoreDataBuilder:
 
         self.con: duckdb.DuckDBPyConnection = con
         self.config_dict: dict = config_dict
-        config_data: dict = self.config_dict["data"]
-        self.entity_column_label: str = config_data["entity_column"]
+        self.config_data: dict = self.config_dict["data"]
+        self.entity_column_label: str = self.config_data["entity_column"]
 
         self.tables = [
             DataInfo(
                 label="data_x",
-                file=Path(config_data["x_file"]),
+                file=Path(self.config_data["x_file"]),
                 mandatory=True,
-                file_profile=config_data["x_file_profile"]
+                file_profile=self.config_data["x_file_profile"]
             ),
             DataInfo(
                 label="data_y",
-                file=Path(config_data["y_file"]),
+                file=Path(self.config_data["y_file"]),
                 mandatory=True,
-                file_profile=config_data["y_file_profile"]
+                file_profile=self.config_data["y_file_profile"]
             ),
             DataInfo(
                 label="extra_data_point",
-                file=Path(config_data["extra_data_point_file"]),
+                file=Path(self.config_data["extra_data_point_file"]),
                 mandatory=False,
-                file_profile=config_data["extra_data_point_file_profile"]
+                file_profile=self.config_data["extra_data_point_file_profile"]
             ),
             DataInfo(
                 label="extra_data_x",
-                file=Path(config_data["extra_data_x_file"]),
+                file=Path(self.config_data["extra_data_x_file"]),
                 mandatory=False,
-                file_profile=config_data["extra_data_x_file_profile"]
+                file_profile=self.config_data["extra_data_x_file_profile"]
             ),
         ]
 
@@ -65,9 +70,10 @@ class CoreDataBuilder:
         self.load_core_raw_tables()
         self.validate_entity_first_column_label()
         self.validate_first_column_entities()
+        self.validate_overlap_columns()
 
         print(self.con.execute("SHOW TABLES").fetchall())
-        self.print_tables()
+        self.print_tables_info()
 
 
 
@@ -147,21 +153,57 @@ class CoreDataBuilder:
                 f"({total_rows - distinct_entities} duplicate rows detected)."
             )
 
+    @matches_table_decorator
+    def validate_overlap_columns(self, table: DataInfo) -> None:
+        """
+        Validate overlap columns for a single table.
+
+        Ensures that overlap_start and overlap_end columns exist,
+        are ordered correctly, and define a continuous integer range.
+        """
+
+        columns = self.con.table(table.label).columns
+
+        overlap_start = str(self.config_data["overlap_start"])
+        overlap_end = str(self.config_data["overlap_end"])
+
+        _overlap_columns_present_in_table(
+            table=table,
+            columns=columns,
+            overlap_start=overlap_start,
+            overlap_end=overlap_end,
+        )
+
+        start_index=columns.index(overlap_start)
+        end_index=columns.index(overlap_end)
+
+        _overlap_columns_indices_order(
+            table_label=table.label,
+            columns=columns,
+            start_index=start_index,
+            end_index=end_index,
+        )
+
+        _overlap_columns_contiguous_int(
+            table_label=table.label,
+            columns=columns,
+            start_index=start_index,
+            end_index=end_index,
+        )
 
 
-        # validate_overlap_columns(
-        #     data_x_table=data_x_table,
-        #     data_y_table=data_y_table,
-        #     overlap_start=self.config_dict["data"]["overlap_start"],
-        #     overlap_end=self.config_dict["data"]["overlap_end"],
-        # )
-
-        # self.matches_table = build_matches_table(
-        # )
-
-        # self.core_table = build_core_table()  # uses matches_table
 
 
-    def print_tables(self) -> None:
+    # self.matches_table = build_matches_table(
+    # )
+
+    # self.core_table = build_core_table()  # uses matches_table
+
+
+
+
+
+
+    def print_tables_info(self) -> None:
         for table in self.tables:
             print(table)

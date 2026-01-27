@@ -67,11 +67,7 @@ class CoreDataBuilder:
         self.validate_first_column_entities()
 
         print(self.con.execute("SHOW TABLES").fetchall())
-        df = self.con.execute(
-            "SELECT * FROM extra_data_x LIMIT 1000"
-        ).df()
-
-        df.to_html("table.html", index=False)
+        self.print_tables()
 
 
 
@@ -166,3 +162,6 @@ class CoreDataBuilder:
         # self.core_table = build_core_table()  # uses matches_table
 
 
+    def print_tables(self) -> None:
+        for table in self.tables:
+            print(table)

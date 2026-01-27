@@ -11,16 +11,6 @@ def _overlap_columns_present_in_table(
     overlap_end: str = "",
 ) -> None:
 
-    if (
-        table is None
-        or len(columns) == 0
-        or len(overlap_start) == 0
-        or len(overlap_start) == 0
-    ):
-        raise OverlapColumnsFailure(
-            "Argument in helper function is missing!"
-        )
-
     if overlap_start not in columns:
         raise OverlapColumnsFailure(
             f"Overlap start '{overlap_start}' not found in table '{table.label}'."
@@ -37,16 +27,6 @@ def _overlap_columns_indices_order(
     start_index: int = -1,
     end_index: int = -1,
 ) -> None:
-
-    if (
-        len(table_label) == 0
-        or len(columns) == 0
-        or start_index == 0
-        or end_index == 0
-    ):
-        raise OverlapColumnsFailure(
-            "Argument in helper function is missing or non-existent!"
-        )
 
     if start_index > end_index:
         raise OverlapColumnsFailure(

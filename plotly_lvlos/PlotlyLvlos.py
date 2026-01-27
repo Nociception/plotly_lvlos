@@ -1,22 +1,19 @@
 import duckdb
+
 from plotly_lvlos.core_data.CoreDataBuilder import CoreDataBuilder
 
 
 class PlotlyLvlos:
+
     def __init__(self, config_dict: dict) -> None:
+
         self.config_dict = config_dict
 
         self.con = duckdb.connect()
 
-        self.core_table: duckdb.DuckDBPyRelation | None = None
-        self.metrics_table: duckdb.DuckDBPyRelation | None = None
-        self.matches_table: duckdb.DuckDBPyRelation | None = None
-
         self.frames = None
 
         self.html_path: str | None = None
-
-
 
     def build_core_data_table(self):
 
@@ -24,10 +21,7 @@ class PlotlyLvlos:
             con=self.con,
             config_dict=self.config_dict,
         )
-        # self. matches_table, self.core_table = core_data_builder.build()
         core_data_builder.build()
-
-
         
 
     # def build_analytical_table(self):

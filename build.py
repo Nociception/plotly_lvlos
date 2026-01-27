@@ -26,13 +26,13 @@ def build(config_path: str) -> None:
 
     plotly_lvlos = PlotlyLvlos(config_dict=config_dict)
     plotly_lvlos.build_core_data_table()
-    # plotly_lvlos.optionnal_data_enrichment()
-    # plotly_lvlos.build_analytical_table
-    # plotly_lvlos.build_plotly_frames()
+
+    # plotly_lvlos.build_analytical_table(self):
+    # plotly_lvlos.build_plotly_frames(self):
     # plotly_lvlos.build_html()
 
     plotly_lvlos.close_connection()
 
 
 if __name__ == "__main__":
-    build("config.toml")
+    build("config/config.toml")

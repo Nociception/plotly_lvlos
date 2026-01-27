@@ -3,14 +3,19 @@ import os.path
 from duckdb import DuckDBPyRelation, DuckDBPyConnection
 from rapidfuzz import fuzz, process
 
-from plotly_lvlos.core_data.get_x_entities_from_matches import (
-    get_x_entities_from_matches,
+
+from plotly_lvlos.errors.errors_build_core_data import (
+    MatchesTableBuildingFailure,
 )
 
-def _create_empty_matches_table(con: DuckDBPyConnection) -> DuckDBPyRelation:
-    return con.execute(
-        """
-        CREATE TABLE matches_table (
+def _create_empty_matches_table(
+    con: DuckDBPyConnection | None = None,
+    matches_table_label: str = ""
+) -> None:
+
+    con.execute(
+        f"""
+        CREATE TABLE {matches_table_label} (
             data_x VARCHAR,
             data_y VARCHAR,
             data_y_match_type VARCHAR,
@@ -27,21 +32,33 @@ def _create_empty_matches_table(con: DuckDBPyConnection) -> DuckDBPyRelation:
 
 
 def _insert_data_x_entities(
-    con: DuckDBPyConnection,
-    data_x_table_label: str,
-    entity_column: str,
+    con: DuckDBPyConnection | None = None,
+    data_x_table_label: str = "",
+    matches_table_label: str = "",
+    entity_column_label: str = "",
 ) -> None:
     
     con.execute(
         f"""
         INSERT INTO
-            matches_table (data_x)
+            {matches_table_label} (data_x)
         SELECT
-            {entity_column}
+            {entity_column_label}
         FROM
             {data_x_table_label}
         """
     )
+
+
+def get_x_entities_from_matches(con: DuckDBPyConnection | None = None) -> list:
+    return [
+        entity[0] for entity in con.execute("""
+            SELECT
+                data_x
+            FROM
+                matches_table
+        """).fetchall()
+    ]
 
 
 def _merge_data_y_entities(
@@ -124,20 +141,20 @@ def build_matches_table(
     matches_table_path: str | None = "",
 ) -> DuckDBPyRelation:
 
-    if matches_table_path and os.path.exists(matches_table_path):
-        print("Matches table provided; using it as-is.")
-        return con.read_csv(matches_table_path)
+    # if matches_table_path and os.path.exists(matches_table_path):
+    #     print("Matches table provided; using it as-is.")
+    #     return con.read_csv(matches_table_path)
 
-    print("No matches table provided.")
-    print("Automatic matches table generation in progress...")
+    # print("No matches table provided.")
+    # print("Automatic matches table generation in progress...")
 
-    _create_empty_matches_table(con)
+    # _create_empty_matches_table(con)
 
-    _insert_data_x_entities(
-        con=con,
-        data_x_table_label=data_x_table_label,
-        entity_column=entity_column,
-    )
+    # _insert_data_x_entities(
+    #     con=con,
+    #     data_x_table_label=data_x_table_label,
+    #     entity_column=entity_column,
+    # )
 
     _merge_data_y_entities(
         con=con,

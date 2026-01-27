@@ -1,5 +1,8 @@
 import duckdb
 from pathlib import Path
+import os.path
+
+import polars as pl
 
 from plotly_lvlos.core_data.matches_table_decorator import (
     matches_table_decorator
@@ -10,6 +13,10 @@ from plotly_lvlos.core_data.validate_overlap_columns import (
     _overlap_columns_present_in_table,
     _overlap_columns_indices_order,
     _overlap_columns_contiguous_int,
+)
+from plotly_lvlos.core_data.build_matches_table import (
+    _create_empty_matches_table,
+    _insert_data_x_entities,
 )
 from plotly_lvlos.errors.errors_build_core_data import (
     FileReadFailure,
@@ -34,6 +41,9 @@ class CoreDataBuilder:
         self.config_dict: dict = config_dict
         self.config_data: dict = self.config_dict["data"]
         self.entity_column_label: str = self.config_data["entity_column"]
+
+        self.matches_table_path = "config/matches.csv"
+        self.matches_table_label = "matches"
 
         self.tables = [
             DataInfo(
@@ -69,10 +79,23 @@ class CoreDataBuilder:
     ]:
         self.load_core_raw_tables()
         self.validate_entity_first_column_label()
-        self.validate_first_column_entities()
+        self.validate_first_column_entities_uniqueness()
         self.validate_overlap_columns()
 
+        self.build_matches_table()
+
+        # self.build_core_table()
+
         print(self.con.execute("SHOW TABLES").fetchall())
+
+        print("#####")
+        df = self.con.execute(
+            f"SELECT * FROM {self.matches_table_label} LIMIT 1000"
+        ).df()
+
+        df.to_html("table.html", index=False)
+        print("#####")
+
         self.print_tables_info()
 
 
@@ -102,7 +125,6 @@ class CoreDataBuilder:
             duckdb.InternalException,
         ) as e:
             raise FileReadFailure(table, e)
-    
 
     @matches_table_decorator
     def validate_entity_first_column_label(
@@ -129,9 +151,8 @@ class CoreDataBuilder:
                 f"found `{first_col}` instead."
             )
 
-
     @matches_table_decorator
-    def validate_first_column_entities(
+    def validate_first_column_entities_uniqueness(
         self,
         table: DataInfo,
     ) -> None:
@@ -154,7 +175,10 @@ class CoreDataBuilder:
             )
 
     @matches_table_decorator
-    def validate_overlap_columns(self, table: DataInfo) -> None:
+    def validate_overlap_columns(
+        self,
+        table: DataInfo
+    ) -> None:
         """
         Validate overlap columns for a single table.
 
@@ -192,16 +216,32 @@ class CoreDataBuilder:
         )
 
 
+    def build_matches_table(self) -> None:
+        """TODO: log these prints"""
+        if os.path.exists(self.matches_table_path):
+            print("Matches table provided; using it as is.")
+            return
+        print("No matches table provided.")
+        print("Automatic matches table generation in progress...")
+            
+        _create_empty_matches_table(
+            con=self.con,
+            matches_table_label=self.matches_table_label,
+        )
+
+        _insert_data_x_entities(
+            con=self.con,
+            data_x_table_label=self.tables[0].label,
+            matches_table_label=self.matches_table_label,
+            entity_column_label=self.entity_column_label,
+        )
 
 
-    # self.matches_table = build_matches_table(
-    # )
-
-    # self.core_table = build_core_table()  # uses matches_table
 
 
 
 
+    # def build_core_table(self) -> None:  # uses matches_table
 
 
     def print_tables_info(self) -> None:

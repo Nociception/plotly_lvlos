@@ -50,6 +50,10 @@ def write_valid_config(
                     file_path = tmp_path / f"{key}.csv"
                     file_path.touch()
                     value = str(file_path)
+
+                elif key.endswith("_profile"):
+                    value = "clean"
+
                 else:
                     len_min = constraints.get("len_min", 1)
                     value = "a" * max(1, len_min)

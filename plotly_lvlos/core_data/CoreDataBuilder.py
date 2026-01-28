@@ -93,7 +93,7 @@ class CoreDataBuilder:
             f"SELECT * FROM {self.matches_table_label} LIMIT 1000"
         ).df()
 
-        df.to_html("table.html", index=False)
+        df.to_html("tables.html", index=False)
         print("#####")
 
         self.print_tables_info()

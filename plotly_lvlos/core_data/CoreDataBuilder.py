@@ -2,8 +2,6 @@ import duckdb
 from pathlib import Path
 import os.path
 
-import polars as pl
-
 from plotly_lvlos.core_data.matches_table_decorator import (
     matches_table_decorator
 )

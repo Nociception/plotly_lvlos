@@ -1,12 +1,5 @@
-import os.path
 
-from duckdb import DuckDBPyRelation, DuckDBPyConnection
-from rapidfuzz import fuzz, process
-
-from plotly_lvlos.core_data.DataInfo import DataInfo
-from plotly_lvlos.errors.errors_build_core_data import (
-    MatchesTableBuildingFailure,
-)
+from duckdb import DuckDBPyConnection
 
 def _create_empty_matches_table(
     con: DuckDBPyConnection | None = None,
@@ -63,5 +56,3 @@ def _get_entities_from_table(
                 {table_label}
         """).fetchall()
     ]
-
-

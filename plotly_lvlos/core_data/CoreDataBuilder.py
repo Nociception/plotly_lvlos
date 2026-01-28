@@ -17,6 +17,7 @@ from plotly_lvlos.core_data.validate_overlap_columns import (
 from plotly_lvlos.core_data.build_matches_table import (
     _create_empty_matches_table,
     _insert_data_x_entities,
+    _get_entities_from_table,
 )
 from plotly_lvlos.errors.errors_build_core_data import (
     FileReadFailure,
@@ -44,6 +45,7 @@ class CoreDataBuilder:
 
         self.matches_table_path = "config/matches.csv"
         self.matches_table_label = "matches"
+        self.x_entities: list[str] | None = None
 
         self.tables = [
             DataInfo(
@@ -215,6 +217,59 @@ class CoreDataBuilder:
             end_index=end_index,
         )
 
+    @matches_table_decorator
+    def merge_entities_into_matches_table(
+        self,
+        table: DataInfo
+    ) -> None:
+        if table.label == "data_x":
+            return
+     
+        from rapidfuzz import fuzz, process
+
+        match_threshold: int = 90
+        table_entities = _get_entities_from_table(
+            con=self.con,
+            table_label=table.label,
+            entity_column_label=self.entity_column_label
+        )
+        matches = []
+        for table_entity in table_entities:
+            best_match_in_x, score, _ = process.extractOne(
+                table_entity,
+                self.x_entities,
+                scorer=fuzz.WRatio
+            )
+            if score >= 100:
+                matches.append((table_entity, best_match_in_x, "exact", 1.0))
+            elif score >= match_threshold:
+                matches.append((table_entity, best_match_in_x, "fuzzy", score / 100.0))
+            else:
+                matches.append((table_entity, None, "unmatched", 0.0))
+        
+        for table_entity, x_match, match_type, confidence in matches:
+            if x_match is not None:
+                self.con.execute(f"""
+                    UPDATE
+                        {self.matches_table_label}
+                    SET
+                        {table.label} = ?, {table.label}_match_type = ?, {table.label}_confidence = ?
+                    WHERE
+                        data_x = ?
+                    """,
+                    (table_entity, match_type, confidence, x_match)
+                )
+
+            # else:
+            #     con.execute(f"""
+            #         INSERT INTO
+            #             {matches_table_label} (data_x, data_y, data_y_match_type, data_y_confidence)
+            #         VALUES
+            #             (?, ?, ?, ?)
+            #         """,
+            #         (None, y_entity, match_type, confidence)
+            #     )
+            
 
     def build_matches_table(self) -> None:
         """TODO: log these prints"""
@@ -228,15 +283,18 @@ class CoreDataBuilder:
             con=self.con,
             matches_table_label=self.matches_table_label,
         )
-
         _insert_data_x_entities(
             con=self.con,
             data_x_table_label=self.tables[0].label,
             matches_table_label=self.matches_table_label,
             entity_column_label=self.entity_column_label,
         )
-
-
+        self.x_entities = _get_entities_from_table(
+            con=self.con,
+            table_label=self.tables[0].label,
+            entity_column_label=self.entity_column_label,
+        )
+        self.merge_entities_into_matches_table()
 
 
 

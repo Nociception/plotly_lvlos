@@ -11,19 +11,33 @@ def _overlap_columns_present_in_table(
     overlap_end: str = "",
 ) -> None:
 
-    if overlap_start not in columns:
+    if table.mandatory:
+        if overlap_start not in columns:
+            raise OverlapColumnsFailure(
+                f"Overlap start '{overlap_start}' not found in table '{table.label}'."
+            )
+        if overlap_end not in columns:
+            raise OverlapColumnsFailure(
+                f"Overlap end '{overlap_end}' not found in table '{table.label}'."
+            )
+    else:
+        for column in columns:
+            try:
+                int_column = int(column)
+                if int_column in [
+                    col for col in range(
+                        int(overlap_start), int(overlap_end) + 1)]:
+                    return
+            except ValueError:
+                continue
         raise OverlapColumnsFailure(
-            f"Overlap start '{overlap_start}' not found in table '{table.label}'."
-        )
-    if overlap_end not in columns:
-        raise OverlapColumnsFailure(
-            f"Overlap end '{overlap_end}' not found in table '{table.label}'."
+            f"No overlap column found in {table.label}."
+            "At least one column must be in the range [overlap_start, overlap_end]."
         )
 
 
 def _overlap_columns_indices_order(
     table_label: str = "",
-    columns: list = [],
     start_index: int = -1,
     end_index: int = -1,
 ) -> None:

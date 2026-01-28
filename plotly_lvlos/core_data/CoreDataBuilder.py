@@ -93,7 +93,7 @@ class CoreDataBuilder:
             f"SELECT * FROM {self.matches_table_label} LIMIT 1000"
         ).df()
 
-        df.to_html("tables.html", index=False)
+        df.to_html("table.html", index=False)
         print("#####")
 
         self.print_tables_info()
@@ -190,7 +190,6 @@ class CoreDataBuilder:
 
         overlap_start = str(self.config_data["overlap_start"])
         overlap_end = str(self.config_data["overlap_end"])
-
         _overlap_columns_present_in_table(
             table=table,
             columns=columns,
@@ -198,22 +197,22 @@ class CoreDataBuilder:
             overlap_end=overlap_end,
         )
 
-        start_index=columns.index(overlap_start)
-        end_index=columns.index(overlap_end)
+        if table.mandatory:
+            start_index=columns.index(overlap_start)
+            end_index=columns.index(overlap_end)
 
-        _overlap_columns_indices_order(
-            table_label=table.label,
-            columns=columns,
-            start_index=start_index,
-            end_index=end_index,
-        )
+            _overlap_columns_indices_order(
+                table_label=table.label,
+                start_index=start_index,
+                end_index=end_index,
+            )
 
-        _overlap_columns_contiguous_int(
-            table_label=table.label,
-            columns=columns,
-            start_index=start_index,
-            end_index=end_index,
-        )
+            _overlap_columns_contiguous_int(
+                table_label=table.label,
+                columns=columns,
+                start_index=start_index,
+                end_index=end_index,
+            )
 
     @matches_table_decorator
     def merge_entities_into_matches_table(
@@ -294,7 +293,7 @@ class CoreDataBuilder:
         )
         self.merge_entities_into_matches_table()
 
-
+        # must generate the so called matches.csv into the config directory
 
 
     # def build_core_table(self) -> None:  # uses matches_table

@@ -11,5 +11,4 @@ wheels/
 
 # Specific files
 todo
-matches.csv
-table.html
+config/matches.xlsx

@@ -16,6 +16,7 @@ from plotly_lvlos.core_data.build_matches_table import (
     _create_empty_matches_table,
     _insert_data_x_entities,
     _get_entities_from_table,
+    _export_matches_excel,
 )
 from plotly_lvlos.errors.errors_build_core_data import (
     FileReadFailure,
@@ -41,7 +42,7 @@ class CoreDataBuilder:
         self.config_data: dict = self.config_dict["data"]
         self.entity_column_label: str = self.config_data["entity_column"]
 
-        self.matches_table_path = "config/matches.csv"
+        self.matches_table_path = "config/matches.xlsx"
         self.matches_table_label = "matches"
         self.x_entities: list[str] | None = None
 
@@ -81,20 +82,11 @@ class CoreDataBuilder:
         self.validate_entity_first_column_label()
         self.validate_first_column_entities_uniqueness()
         self.validate_overlap_columns()
-
         self.build_matches_table()
 
         # self.build_core_table()
 
         print(self.con.execute("SHOW TABLES").fetchall())
-
-        print("#####")
-        df = self.con.execute(
-            f"SELECT * FROM {self.matches_table_label} LIMIT 1000"
-        ).df()
-
-        df.to_html("table.html", index=False)
-        print("#####")
 
         self.print_tables_info()
 
@@ -300,9 +292,11 @@ class CoreDataBuilder:
             entity_column_label=self.entity_column_label,
         )
         self.merge_entities_into_matches_table()
-
-        # must generate the so called matches.csv into the config directory
-
+        _export_matches_excel(
+            con=self.con,
+            matches_table_label=self.matches_table_label,
+            output_path=self.matches_table_path,
+        )
 
     # def build_core_table(self) -> None:  # uses matches_table
 

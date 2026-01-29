@@ -18,4 +18,5 @@ dependencies = [
     "ruff>=0.14.13",
     "tomli-w>=1.2.0",
     "typeguard>=4.4.4",
+    "xlsxwriter>=3.2.9",
 ]

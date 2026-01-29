@@ -8,6 +8,10 @@ TEST_DIR = tests
 
 build:
 
+	@if [ -f table.html ]; then \
+		rm table.html; \
+	fi
+
 	@if [ -f matches.csv ]; then \
 		echo CAREFUL ! matches.csv is rm each time make is called ! Rm the rm before final push; \
 		rm matches.csv; \

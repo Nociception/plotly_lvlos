@@ -34,6 +34,7 @@ class CoreDataBuilder:
         self,
         con : duckdb.DuckDBPyConnection | None,
         config_dict: dict | None,
+        core_data_table_label: str = "",
     ):
         if con is None:
             raise ValueError("con (connection) is missing !")
@@ -47,6 +48,9 @@ class CoreDataBuilder:
 
         self.matches_table_path = "config/matches.xlsx"
         self.matches_table_label = "matches"
+
+        self.core_data_table_label = core_data_table_label
+
         self.x_entities: list[str] | None = None
 
         self.tables = [
@@ -87,13 +91,13 @@ class CoreDataBuilder:
         self.validate_overlap_columns()
         self.build_matches_table()
 
-        self.build_core_table()
+        self.build_core_data_table()
 
         print(self.con.execute("SHOW TABLES").fetchall())
 
         print("######")
         df = self.con.execute(
-            f"SELECT * FROM {self.matches_table_label} LIMIT 1000"
+            f"SELECT * FROM {self.core_data_table_label} LIMIT 1000"
         ).df()
         df.to_html("table.html", index=False)
 
@@ -307,13 +311,30 @@ class CoreDataBuilder:
             output_path=self.matches_table_path,
         )
 
-    def build_core_table(self) -> None:
+    def _create_empty_core_data_table(self) -> None:
+        self.con.execute(f"""
+            CREATE TABLE {self.core_data_table_label} (
+                {self.entity_column_label} TEXT NOT NULL,
+                {self.config_data["overlap_column"]} INTEGER NOT NULL,
+                {self.tables[0].label} DOUBLE,
+                {self.tables[0].label}_log DOUBLE,
+                {self.tables[1].label} DOUBLE,
+                {self.tables[2].label} DOUBLE,
+                {self.tables[3].label} DOUBLE,
+                PRIMARY KEY ({self.entity_column_label}, {self.config_data["overlap_column"]})
+            )
+        """)
 
+    def build_core_data_table(self) -> None:
+
+        self._create_empty_core_data_table()
+        
         _load_matches_file(
             con=self.con,
             matches_file_path=self.matches_table_path,
             matches_table_label=self.matches_table_label,
         )
+
 
     def print_tables_info(self) -> None:
         for table in self.tables:

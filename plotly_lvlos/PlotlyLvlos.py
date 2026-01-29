@@ -15,11 +15,14 @@ class PlotlyLvlos:
 
         self.html_path: str | None = None
 
+        self.core_data_table_label = "core_data"
+
     def build_core_data_table(self):
 
         core_data_builder = CoreDataBuilder(
             con=self.con,
             config_dict=self.config_dict,
+            core_data_table_label = self.core_data_table_label,
         )
         core_data_builder.build()
         

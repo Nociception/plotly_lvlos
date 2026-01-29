@@ -11,5 +11,5 @@ wheels/
 
 # Specific files
 todo
-config/matches.xlsx
+*matches.xlsx*
 table.html

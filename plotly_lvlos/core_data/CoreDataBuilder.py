@@ -91,13 +91,14 @@ class CoreDataBuilder:
 
         print(self.con.execute("SHOW TABLES").fetchall())
 
-        # print("######")
-        # df = self.con.execute(
-        #     f"SELECT * FROM {self.matches_table_label} LIMIT 1000"
-        # ).df()
+        print("######")
+        df = self.con.execute(
+            f"SELECT * FROM {self.matches_table_label} LIMIT 1000"
+        ).df()
+        df.to_html("table.html", index=False)
 
-        # df.to_html("table.html", index=False)
-        # print("######")
+        print(self.con.execute("DESCRIBE matches").fetchall())
+        print("######")
 
         self.print_tables_info()
 
@@ -279,9 +280,9 @@ class CoreDataBuilder:
     def build_matches_table(self) -> None:
         """TODO: log these prints"""
         if os.path.exists(self.matches_table_path):
-            print("Matches table provided; using it as is.")
+            print("Matches file provided; using it as is.")
             return
-        print("No matches table provided.")
+        print("No matches file provided.")
         print("Automatic matches table generation in progress...")
             
         _create_empty_matches_table(

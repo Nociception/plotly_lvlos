@@ -257,15 +257,23 @@ class CoreDataBuilder:
                     (table_entity, match_type, confidence, x_match)
                 )
 
-            # else:
-            #     con.execute(f"""
-            #         INSERT INTO
-            #             {matches_table_label} (data_x, data_y, data_y_match_type, data_y_confidence)
-            #         VALUES
-            #             (?, ?, ?, ?)
-            #         """,
-            #         (None, y_entity, match_type, confidence)
-            #     )
+            else:
+                self.con.execute(f"""
+                    INSERT INTO {self.matches_table_label} (
+                        data_x,
+                        {table.label},
+                        {table.label}_match_type,
+                        {table.label}_confidence
+                    )
+                    VALUES (?, ?, ?, ?)
+                    """,
+                    (
+                        None,
+                        table_entity,
+                        "unmatched",
+                        0.0,
+                    ),
+                )
             
 
     def build_matches_table(self) -> None:

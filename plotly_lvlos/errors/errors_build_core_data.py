@@ -16,7 +16,7 @@ class MatchesTableBuildingFailure(Exception):
 
 # specific failure classes
 class FileReadFailure(TableValidationFailure):
-    def __init__(self, table: DataInfo, original_exception: Exception):
+    def __init__(self, table: DataInfo, original_exception: Exception | None = None):
         self.label = table.label
         self.file = table.file
         self.original_exception = original_exception

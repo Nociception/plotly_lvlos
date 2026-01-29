@@ -18,6 +18,9 @@ from plotly_lvlos.core_data.build_matches_table import (
     _get_entities_from_table,
     _export_matches_excel,
 )
+from plotly_lvlos.core_data.core_data_table_builder import (
+    _load_matches_file,
+)
 from plotly_lvlos.errors.errors_build_core_data import (
     FileReadFailure,
     EntityColumnFailure,
@@ -84,13 +87,19 @@ class CoreDataBuilder:
         self.validate_overlap_columns()
         self.build_matches_table()
 
-        # self.build_core_table()
+        self.build_core_table()
 
         print(self.con.execute("SHOW TABLES").fetchall())
 
+        # print("######")
+        # df = self.con.execute(
+        #     f"SELECT * FROM {self.matches_table_label} LIMIT 1000"
+        # ).df()
+
+        # df.to_html("table.html", index=False)
+        # print("######")
+
         self.print_tables_info()
-
-
 
     @matches_table_decorator
     def load_core_raw_tables(
@@ -267,7 +276,6 @@ class CoreDataBuilder:
                     ),
                 )
             
-
     def build_matches_table(self) -> None:
         """TODO: log these prints"""
         if os.path.exists(self.matches_table_path):
@@ -298,8 +306,13 @@ class CoreDataBuilder:
             output_path=self.matches_table_path,
         )
 
-    # def build_core_table(self) -> None:  # uses matches_table
+    def build_core_table(self) -> None:
 
+        _load_matches_file(
+            con=self.con,
+            matches_file_path=self.matches_table_path,
+            matches_table_label=self.matches_table_label,
+        )
 
     def print_tables_info(self) -> None:
         for table in self.tables:

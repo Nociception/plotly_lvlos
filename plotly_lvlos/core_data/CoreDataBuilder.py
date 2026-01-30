@@ -1,3 +1,4 @@
+import csv
 import duckdb
 from pathlib import Path
 import os.path
@@ -97,22 +98,29 @@ class CoreDataBuilder:
         print(self.con.execute("SHOW TABLES").fetchall())
 
         print("######")
+        # df = self.con.execute(
+        #     f"SELECT * FROM {self.core_data_table_label}"
+        # ).df()
         df = self.con.execute(
-            f"SELECT * FROM {self.core_data_table_label}"
+            f"SELECT * FROM data_x_long"
         ).df()
         df.to_html("table.html", index=False)
 
-        print(self.con.execute("DESCRIBE matches").fetchall())
+        # print(self.con.execute("DESCRIBE data_x").fetchall())
         print("######")
 
         self.print_tables_info()
 
     @matches_table_decorator
-    def load_core_raw_tables(
-        self,
-        table: DataInfo
-    ) -> None:
+    def load_core_raw_tables(self, table: DataInfo) -> None:
         profile_kwargs = CSV_PROFILES[table.file_profile]
+
+        with open(table.file, newline="") as f:
+            reader = csv.reader(f)
+            header = next(reader)
+
+        profile_kwargs["dtype"] = ["VARCHAR"] * len(header)
+
         try:
             self.con.register(
                 table.label,
@@ -326,30 +334,25 @@ class CoreDataBuilder:
             )
         """)
 
-    def _generate_core_data_rows(self) -> None:
+    def _build_self_cross_joined_data_x_table(self) -> None:
+        unpivot_columns = ", ".join(
+            f'"{year}"'
+            for year in range(
+                self.config_data["overlap_start"],
+                self.config_data["overlap_end"] + 1
+            )
+        )
+
         self.con.execute(f"""
-            WITH overlap_columns AS (
-                SELECT
-                    {self.overlap_column_label}
-                FROM generate_series(
-                    {self.config_data["overlap_start"]},
-                    {self.config_data["overlap_end"]}
-                ) AS overlap_series({self.overlap_column_label})
-            )
-            INSERT INTO {self.core_data_table_label} (
-                {self.entity_column_label},
-                {self.overlap_column_label}
-            )
+            CREATE TEMP TABLE data_x_long AS
             SELECT
-                m.data_x AS {self.entity_column_label},
-                oc.{self.overlap_column_label}
-            FROM
-                {self.matches_table_label} AS m
-            CROSS JOIN
-                overlap_columns AS oc
-            ORDER BY
-                {self.entity_column_label},
-                {self.overlap_column_label}
+                {self.entity_column_label} AS entity,
+                CAST(col AS INTEGER) AS {self.overlap_column_label},
+                val AS data_x
+            FROM data_x
+            UNPIVOT (
+                val FOR col IN ({unpivot_columns})
+            )
         """)
 
 
@@ -361,11 +364,9 @@ class CoreDataBuilder:
             matches_file_path=self.matches_table_path,
             matches_table_label=self.matches_table_label,
         )
-        self._generate_core_data_rows()
         
 
-
-
+        self._build_self_cross_joined_data_x_table()
 
 
 
@@ -373,3 +374,32 @@ class CoreDataBuilder:
     def print_tables_info(self) -> None:
         for table in self.tables:
             print(table)
+
+
+
+
+    # def _generate_core_data_rows(self) -> None:
+    #     self.con.execute(f"""
+    #         WITH overlap_columns AS (
+    #             SELECT
+    #                 {self.overlap_column_label}
+    #             FROM generate_series(
+    #                 {self.config_data["overlap_start"]},
+    #                 {self.config_data["overlap_end"]}
+    #             ) AS overlap_series({self.overlap_column_label})
+    #         )
+    #         INSERT INTO {self.core_data_table_label} (
+    #             {self.entity_column_label},
+    #             {self.overlap_column_label}
+    #         )
+    #         SELECT
+    #             m.data_x AS {self.entity_column_label},
+    #             oc.{self.overlap_column_label}
+    #         FROM
+    #             {self.matches_table_label} AS m
+    #         CROSS JOIN
+    #             overlap_columns AS oc
+    #         ORDER BY
+    #             {self.entity_column_label},
+    #             {self.overlap_column_label}
+    #     """)

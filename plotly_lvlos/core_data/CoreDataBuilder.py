@@ -50,6 +50,7 @@ class CoreDataBuilder:
         self.matches_table_label = "matches"
 
         self.core_data_table_label = core_data_table_label
+        self.overlap_column_label = self.config_data["overlap_column"]
 
         self.x_entities: list[str] | None = None
 
@@ -97,7 +98,7 @@ class CoreDataBuilder:
 
         print("######")
         df = self.con.execute(
-            f"SELECT * FROM {self.core_data_table_label} LIMIT 1000"
+            f"SELECT * FROM {self.core_data_table_label}"
         ).df()
         df.to_html("table.html", index=False)
 
@@ -325,15 +326,48 @@ class CoreDataBuilder:
             )
         """)
 
+    def _generate_core_data_rows(self) -> None:
+        self.con.execute(f"""
+            WITH overlap_columns AS (
+                SELECT
+                    {self.overlap_column_label}
+                FROM generate_series(
+                    {self.config_data["overlap_start"]},
+                    {self.config_data["overlap_end"]}
+                ) AS overlap_series({self.overlap_column_label})
+            )
+            INSERT INTO {self.core_data_table_label} (
+                {self.entity_column_label},
+                {self.overlap_column_label}
+            )
+            SELECT
+                m.data_x AS {self.entity_column_label},
+                oc.{self.overlap_column_label}
+            FROM
+                {self.matches_table_label} AS m
+            CROSS JOIN
+                overlap_columns AS oc
+            ORDER BY
+                {self.entity_column_label},
+                {self.overlap_column_label}
+        """)
+
+
     def build_core_data_table(self) -> None:
 
         self._create_empty_core_data_table()
-        
         _load_matches_file(
             con=self.con,
             matches_file_path=self.matches_table_path,
             matches_table_label=self.matches_table_label,
         )
+        self._generate_core_data_rows()
+        
+
+
+
+
+
 
 
     def print_tables_info(self) -> None:

@@ -18,10 +18,11 @@ from plotly_lvlos.core_data.build_matches_table import (
     _insert_data_x_entities,
     _get_entities_from_table,
     _export_matches_excel,
+    _load_matches_file,
 )
 from plotly_lvlos.core_data.core_data_table_builder import (
-    _load_matches_file,
     _get_overlap_columns,
+    _build_core_data_table,
 )
 from plotly_lvlos.errors.errors_build_core_data import (
     FileReadFailure,
@@ -87,7 +88,6 @@ class CoreDataBuilder:
             ),
         ]
 
-
     def build(self) -> tuple[
         duckdb.DuckDBPyRelation,
         duckdb.DuckDBPyRelation,
@@ -97,17 +97,22 @@ class CoreDataBuilder:
         self.validate_first_column_entities_uniqueness()
         self.validate_overlap_columns()
         self.fill_overlap_columns_sql_DataFileInfo_field()
-
         self.build_matches_table()
-
-        self.build_core_data_table()
+        _load_matches_file(
+            con=self.con,
+            matches_file_path=self.matches_table_path,
+            matches_table_label=self.matches_table_label,
+        )
+        _build_core_data_table(
+            con=self.con,
+            entity_column_label=self.entity_column_label,
+            overlap_column_label=self.overlap_column_label,
+            tables=self.tables,
+        )
 
         print(self.con.execute("SHOW TABLES").fetchall())
 
         print("######")
-        # df = self.con.execute(
-        #     f"SELECT * FROM {self.core_data_table_label}"
-        # ).df()
         df = self.con.execute(
             f"SELECT * FROM core_data"
         ).df()
@@ -116,7 +121,7 @@ class CoreDataBuilder:
         # print(self.con.execute("DESCRIBE data_x").fetchall())
         print("######")
 
-        self.print_tables_info()
+        # self.print_tables_info()
 
     @matches_table_decorator
     def load_core_raw_tables(self, table: DataFileInfo) -> None:
@@ -342,144 +347,6 @@ class CoreDataBuilder:
             matches_table_label=self.matches_table_label,
             output_path=self.matches_table_path,
         )
-
-    def _create_empty_core_data_table(self) -> None:
-        self.con.execute(f"""
-            CREATE TABLE {self.core_data_table_label} (
-                {self.entity_column_label} TEXT NOT NULL,
-                {self.config_data["overlap_column"]} INTEGER NOT NULL,
-                {self.tables[0].label} DOUBLE,
-                {self.tables[0].label}_log DOUBLE,
-                {self.tables[1].label} DOUBLE,
-                {self.tables[2].label} DOUBLE,
-                {self.tables[3].label} DOUBLE,
-                PRIMARY KEY ({self.entity_column_label}, {self.config_data["overlap_column"]})
-            )
-        """)
-
-    # def _unpivot_data_x_from_wide_to_long(self) -> None:
-    #     overlap_columns = _get_overlap_columns(
-    #         con=self.con,
-    #         table_name=self.tables[0].label,
-    #         overlap_start=self.config_data["overlap_start"],
-    #         overlap_end=self.config_data["overlap_end"],
-    #     )
-
-    #     unpivot_columns_sql = ", ".join(
-    #         f'"{col}"' for col in overlap_columns
-    #     )
-
-    #     self.con.execute(f"""
-    #         CREATE TEMP TABLE data_x_long AS
-    #         SELECT
-    #             {self.entity_column_label} AS entity,
-    #             CAST(col AS INTEGER) AS {self.overlap_column_label},
-    #             val AS data_x
-    #         FROM data_x
-    #         UNPIVOT (
-    #             val FOR col IN ({unpivot_columns_sql})
-    #         )
-    #     """)
-
-
-    def build_core_data_table(self) -> None:
-
-        # self._create_empty_core_data_table()
-        _load_matches_file(
-            con=self.con,
-            matches_file_path=self.matches_table_path,
-            matches_table_label=self.matches_table_label,
-        )
-
-        self.con.execute(f"""
-            CREATE TABLE core_data AS
-                WITH
-                    data_x_long AS (
-                        SELECT
-                            {self.entity_column_label},
-                            CAST(col AS INTEGER) AS year,
-                            val AS data_x
-                        FROM
-                            data_x
-                        UNPIVOT (
-                            val FOR col IN ({self.tables[0].overlap_columns_sql})
-                        )
-                    ),
-
-                    data_y_long AS (
-                        SELECT
-                            {self.entity_column_label},
-                            CAST(col AS INTEGER) AS year,
-                            val AS data_y
-                        FROM
-                            data_y
-                        UNPIVOT (
-                            val FOR col IN ({self.tables[1].overlap_columns_sql})
-                        )
-                    ),
-
-                    extra_data_point_long AS (
-                        SELECT
-                            {self.entity_column_label},
-                            CAST(col AS INTEGER) AS year,
-                            val AS extra_data_point
-                        FROM
-                            extra_data_point
-                        UNPIVOT (
-                            val FOR col IN ({self.tables[2].overlap_columns_sql})
-                        )
-                    ),
-
-                    extra_data_x_long AS (
-                        SELECT
-                            {self.entity_column_label},
-                            CAST(col AS INTEGER) AS year,
-                            val AS extra_data_x
-                        FROM
-                            extra_data_x
-                        UNPIVOT (
-                            val FOR col IN ({self.tables[3].overlap_columns_sql})
-                        )
-                    )
-
-                SELECT
-                    dx.{self.entity_column_label} AS {self.entity_column_label},
-                    NULL AS data_x_log,
-                    dx.year AS year,
-                    dx.data_x AS data_x,
-                    dy.data_y AS data_y,
-                    edp.extra_data_point AS extra_data_point,
-                    edx.extra_data_x AS extra_data_x
-
-                FROM
-                    data_x_long AS dx
-
-                LEFT JOIN
-                    matches AS m
-                        ON m.data_x = dx.{self.entity_column_label}
-
-                LEFT JOIN
-                    data_y_long AS dy
-                        ON dy.{self.entity_column_label} = m.data_y
-                        AND dy.year = dx.year
-
-                LEFT JOIN
-                    extra_data_point_long AS edp
-                        ON edp.{self.entity_column_label} = m.extra_data_point
-                        AND edp.year = dx.year
-
-                LEFT JOIN
-                    extra_data_x_long AS edx
-                        ON edx.{self.entity_column_label} = m.extra_data_x
-                        AND edx.year = dx.year
-                
-                ORDER BY
-                    {self.entity_column_label},
-                    year
-        """)
-
-
-
 
     def print_tables_info(self) -> None:
         for table in self.tables:

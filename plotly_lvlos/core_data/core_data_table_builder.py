@@ -1,67 +1,6 @@
-import polars as pl
-import pyarrow as pa
 import duckdb
-from pathlib import Path
+
 from plotly_lvlos.core_data.DataFileInfo import DataFileInfo
-from plotly_lvlos.errors.errors_build_core_data import FileReadFailure
-
-
-EXPECTED_COLUMNS = [
-    "data_x",
-    "data_y",
-    "data_y_match_type",
-    "data_y_confidence",
-    "extra_data_point",
-    "extra_data_point_match_type",
-    "extra_data_point_confidence",
-    "extra_data_x",
-    "extra_data_x_match_type",
-    "extra_data_x_confidence",
-]
-
-def _load_matches_file(
-    con: duckdb.DuckDBPyConnection | None = None,
-    matches_file_path: str = "config/matches.xlsx",
-    matches_table_label: str = "matches",
-) -> None:
-
-    matches_file = Path(matches_file_path)
-
-    try:
-        df: pl.DataFrame = pl.read_excel(
-            str(matches_file),
-            sheet_id=0,
-        )["matched"]
-
-        actual_columns = df.columns
-        if actual_columns != EXPECTED_COLUMNS:
-            raise FileReadFailure(
-                table=DataFileInfo(
-                    label=matches_table_label,
-                    file=str(matches_file_path),
-                    mandatory=True,
-                    file_profile="clean",
-                ),
-                original_exception=ValueError(
-                    f"Expected columns: {EXPECTED_COLUMNS}\n"
-                    f"Found columns   : {actual_columns}"
-                ),
-            )
-
-        table_arrow: pa.Table = df.to_arrow()
-        con.register(matches_table_label, table_arrow)
-
-    except Exception as e:
-        raise FileReadFailure(
-            table=DataFileInfo(
-                label=matches_table_label,
-                file=str(matches_file_path),
-                mandatory=True,
-                file_profile="clean",
-            ),
-            original_exception=e,
-        ) from e
-
 
 def _get_overlap_columns(
     con: duckdb.DuckDBPyConnection | None = None,
@@ -96,3 +35,97 @@ def _get_overlap_columns(
         )
 
     return overlap_columns
+
+def _build_core_data_table(
+    con: duckdb.DuckDBPyConnection | None = None,
+    entity_column_label: str = "",
+    overlap_column_label: str = "",
+    tables: list[DataFileInfo] = [],
+) -> None:
+
+    con.execute(f"""
+        CREATE TABLE core_data AS
+            WITH
+                data_x_long AS (
+                    SELECT
+                        {entity_column_label},
+                        CAST(col AS INTEGER) AS {overlap_column_label},
+                        val AS data_x
+                    FROM
+                        data_x
+                    UNPIVOT (
+                        val FOR col IN ({tables[0].overlap_columns_sql})
+                    )
+                ),
+
+                data_y_long AS (
+                    SELECT
+                        {entity_column_label},
+                        CAST(col AS INTEGER) AS {overlap_column_label},
+                        val AS data_y
+                    FROM
+                        data_y
+                    UNPIVOT (
+                        val FOR col IN ({tables[1].overlap_columns_sql})
+                    )
+                ),
+
+                extra_data_point_long AS (
+                    SELECT
+                        {entity_column_label},
+                        CAST(col AS INTEGER) AS {overlap_column_label},
+                        val AS extra_data_point
+                    FROM
+                        extra_data_point
+                    UNPIVOT (
+                        val FOR col IN ({tables[2].overlap_columns_sql})
+                    )
+                ),
+
+                extra_data_x_long AS (
+                    SELECT
+                        {entity_column_label},
+                        CAST(col AS INTEGER) AS {overlap_column_label},
+                        val AS extra_data_x
+                    FROM
+                        extra_data_x
+                    UNPIVOT (
+                        val FOR col IN ({tables[3].overlap_columns_sql})
+                    )
+                )
+
+            SELECT
+                dx.{entity_column_label} AS {entity_column_label},
+                dx.{overlap_column_label} AS {overlap_column_label},
+                dx.data_x AS data_x,
+                NULL AS data_x_log,
+                dy.data_y AS data_y,
+                edp.extra_data_point AS extra_data_point,
+                edx.extra_data_x AS extra_data_x
+
+            FROM
+                data_x_long AS dx
+
+            LEFT JOIN
+                matches AS m
+                    ON m.data_x = dx.{entity_column_label}
+
+            LEFT JOIN
+                data_y_long AS dy
+                    ON dy.{entity_column_label} = m.data_y
+                    AND dy.{overlap_column_label} = dx.{overlap_column_label}
+
+            LEFT JOIN
+                extra_data_point_long AS edp
+                    ON edp.{entity_column_label} = m.extra_data_point
+                    AND edp.{overlap_column_label} = dx.{overlap_column_label}
+
+            LEFT JOIN
+                extra_data_x_long AS edx
+                    ON edx.{entity_column_label} = m.extra_data_x
+                    AND edx.{overlap_column_label} = dx.{overlap_column_label}
+            
+            ORDER BY
+                {entity_column_label},
+                {overlap_column_label}
+    """)

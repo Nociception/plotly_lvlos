@@ -5,11 +5,21 @@ output_dir = "build"
 
 [data]
 x_file = "data/gdppercapita_ppp_inflation_adjusted.csv"
+x_file_profile = "clean"
+
 y_file = "data/life_expectancy_years.csv"
+y_file_profile = "clean"
+
 extra_data_point_file = "data/population_total.csv"
+extra_data_point_file_profile = "clean"
+
 extra_data_x_file = "data/Gini_coefficient.csv"
+extra_data_x_file_profile = "dusty"
+
 entity_column = "country"
 overlap_column = "year"
+overlap_start = 1800
+overlap_end = 2050
 
 [analysis]
 min_points_per_year = 5

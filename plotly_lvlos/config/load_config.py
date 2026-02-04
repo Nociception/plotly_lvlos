@@ -6,6 +6,9 @@ from typeguard import typechecked
 from plotly_lvlos.config.parse_config_toml_dict import parse_config_toml_dict
 from plotly_lvlos.config.validate_config_values import validate_config_values
 from plotly_lvlos.config.validate_files_exist import validate_files_exist
+from plotly_lvlos.config.sanitize_config_sql_identifiers import (
+    sanitize_config_sql_identifiers,
+)
 from plotly_lvlos.errors.errors_config import (
     ConfigFileNotFound,
     ConfigFileInvalid,
@@ -40,7 +43,7 @@ def load_config(path: Path) -> dict:
         If the configuration file does not exist.
     ConfigFileInvalid
         If the file is not valid TOML.
-    ConfigError
+    ErrorConfig
         If the configuration structure or values are invalid.
     """
     if not path.exists():
@@ -48,10 +51,12 @@ def load_config(path: Path) -> dict:
 
     try:
         with path.open("rb") as f:
-            return_dict = tomllib.load(f)
-            parse_config_toml_dict(return_dict)
-            validate_config_values(return_dict)
-            validate_files_exist(return_dict)
-            return return_dict
+            toml_dict = tomllib.load(f)
+            parse_config_toml_dict(toml_dict)
+            validate_config_values(toml_dict)
+            validate_files_exist(toml_dict)
+            sanitize_config_sql_identifiers(toml_dict)
+
+            return toml_dict
     except tomllib.TOMLDecodeError as exc:
         raise ConfigFileInvalid(f"Invalid TOML config: {path}") from exc

@@ -2,11 +2,21 @@
 
 PYTHON = uv run python
 BUILD_SCRIPT = build.py
-CONFIG = config.toml
+CONFIG = config/config.toml
 SRC_DIR = plotly_lvlos
 TEST_DIR = tests
 
 build:
+
+	@if [ -f table.html ]; then \
+		rm table.html; \
+	fi
+
+	@if [ -f matches.csv ]; then \
+		echo CAREFUL ! matches.csv is rm each time make is called ! Rm the rm before final push; \
+		rm matches.csv; \
+	fi
+
 	@echo " Building project..."
 	@if [ ! -f $(CONFIG) ]; then \
 		echo "Config file $(CONFIG) not found!"; \
@@ -19,17 +29,13 @@ test:
 	@echo "Running tests..."
 	$(PYTHON) -m pytest $(TEST_DIR) --disable-warnings -v
 
-lint:
-	@echo "Running lint..."
-	$(PYTHON) -m flake8 $(SRC_DIR)
-
-format:
-	@echo "Running code formatter..."
-	$(PYTHON) -m black $(SRC_DIR) $(TEST_DIR)
+ruff:
+	@echo "Linting code with ruff..."
+	$(PYTHON) -m ruff check $(SRC_DIR) $(TEST_DIR)
 
 clean:
 	@echo "Cleaning cache..."
 	rm -rf __pycache__ */__pycache__
 
-ci: clean build format lint test
+ci: clean build ruff test
 	@echo "CI tasks completed successfully!"

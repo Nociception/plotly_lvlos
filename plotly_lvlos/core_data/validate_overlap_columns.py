@@ -1,11 +1,11 @@
-from plotly_lvlos.core_data.DataInfo import DataInfo
+from plotly_lvlos.core_data.DataFileInfo import DataFileInfo
 from plotly_lvlos.errors.errors_build_core_data import (
     OverlapColumnsFailure,
 )
 
 
 def _overlap_columns_present_in_table(
-    table: DataInfo | None = None,
+    table: DataFileInfo | None = None,
     columns: list = [],
     overlap_start: str = "",
     overlap_end: str = "",

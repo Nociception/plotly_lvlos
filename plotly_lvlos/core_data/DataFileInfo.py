@@ -3,9 +3,10 @@ from pathlib import Path
 
 
 @dataclass
-class DataInfo:
+class DataFileInfo:
     label: str
     file: Path
     mandatory: bool
     file_profile: str
+    overlap_columns_sql: str
     status: bool = True

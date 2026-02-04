@@ -1,6 +1,6 @@
 import warnings
 
-from plotly_lvlos.core_data.DataInfo import DataInfo
+from plotly_lvlos.core_data.DataFileInfo import DataFileInfo
 
 # base classes
 class TableValidationFailure(Exception):
@@ -16,7 +16,7 @@ class MatchesTableBuildingFailure(Exception):
 
 # specific failure classes
 class FileReadFailure(TableValidationFailure):
-    def __init__(self, table: DataInfo, original_exception: Exception | None = None):
+    def __init__(self, table: DataFileInfo, original_exception: Exception | None = None):
         self.label = table.label
         self.file = table.file
         self.original_exception = original_exception

@@ -2,7 +2,7 @@ import polars as pl
 import pyarrow as pa
 import duckdb
 from pathlib import Path
-from plotly_lvlos.core_data.DataInfo import DataInfo
+from plotly_lvlos.core_data.DataFileInfo import DataFileInfo
 from plotly_lvlos.errors.errors_build_core_data import FileReadFailure
 
 
@@ -36,7 +36,7 @@ def _load_matches_file(
         actual_columns = df.columns
         if actual_columns != EXPECTED_COLUMNS:
             raise FileReadFailure(
-                table=DataInfo(
+                table=DataFileInfo(
                     label=matches_table_label,
                     file=str(matches_file_path),
                     mandatory=True,
@@ -53,7 +53,7 @@ def _load_matches_file(
 
     except Exception as e:
         raise FileReadFailure(
-            table=DataInfo(
+            table=DataFileInfo(
                 label=matches_table_label,
                 file=str(matches_file_path),
                 mandatory=True,

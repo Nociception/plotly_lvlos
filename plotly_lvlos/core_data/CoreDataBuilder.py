@@ -6,7 +6,7 @@ import os.path
 from plotly_lvlos.core_data.matches_table_decorator import (
     matches_table_decorator
 )
-from plotly_lvlos.core_data.DataInfo import DataInfo
+from plotly_lvlos.core_data.DataFileInfo import DataFileInfo
 from plotly_lvlos.core_data.csv_profiles import CSV_PROFILES
 from plotly_lvlos.core_data.validate_overlap_columns import (
     _overlap_columns_present_in_table,
@@ -57,29 +57,33 @@ class CoreDataBuilder:
         self.x_entities: list[str] | None = None
 
         self.tables = [
-            DataInfo(
+            DataFileInfo(
                 label="data_x",
                 file=Path(self.config_data["x_file"]),
                 mandatory=True,
-                file_profile=self.config_data["x_file_profile"]
+                file_profile=self.config_data["x_file_profile"],
+                overlap_columns_sql=""
             ),
-            DataInfo(
+            DataFileInfo(
                 label="data_y",
                 file=Path(self.config_data["y_file"]),
                 mandatory=True,
-                file_profile=self.config_data["y_file_profile"]
+                file_profile=self.config_data["y_file_profile"],
+                overlap_columns_sql=""
             ),
-            DataInfo(
+            DataFileInfo(
                 label="extra_data_point",
                 file=Path(self.config_data["extra_data_point_file"]),
                 mandatory=False,
-                file_profile=self.config_data["extra_data_point_file_profile"]
+                file_profile=self.config_data["extra_data_point_file_profile"],
+                overlap_columns_sql=""
             ),
-            DataInfo(
+            DataFileInfo(
                 label="extra_data_x",
                 file=Path(self.config_data["extra_data_x_file"]),
                 mandatory=False,
-                file_profile=self.config_data["extra_data_x_file_profile"]
+                file_profile=self.config_data["extra_data_x_file_profile"],
+                overlap_columns_sql=""
             ),
         ]
 
@@ -92,6 +96,8 @@ class CoreDataBuilder:
         self.validate_entity_first_column_label()
         self.validate_first_column_entities_uniqueness()
         self.validate_overlap_columns()
+        self.fill_overlap_columns_sql_DataFileInfo_field()
+
         self.build_matches_table()
 
         self.build_core_data_table()
@@ -103,7 +109,7 @@ class CoreDataBuilder:
         #     f"SELECT * FROM {self.core_data_table_label}"
         # ).df()
         df = self.con.execute(
-            f"SELECT * FROM data_x_long"
+            f"SELECT * FROM core_data"
         ).df()
         df.to_html("table.html", index=False)
 
@@ -113,7 +119,7 @@ class CoreDataBuilder:
         self.print_tables_info()
 
     @matches_table_decorator
-    def load_core_raw_tables(self, table: DataInfo) -> None:
+    def load_core_raw_tables(self, table: DataFileInfo) -> None:
         profile_kwargs = CSV_PROFILES[table.file_profile]
 
         with open(table.file, newline="") as f:
@@ -145,7 +151,7 @@ class CoreDataBuilder:
     @matches_table_decorator
     def validate_entity_first_column_label(
         self,
-        table: DataInfo,
+        table: DataFileInfo,
     ) -> None:
 
         first_col = self.con.execute(
@@ -170,7 +176,7 @@ class CoreDataBuilder:
     @matches_table_decorator
     def validate_first_column_entities_uniqueness(
         self,
-        table: DataInfo,
+        table: DataFileInfo,
     ) -> None:
 
         total_rows, distinct_entities = self.con.execute(
@@ -193,7 +199,7 @@ class CoreDataBuilder:
     @matches_table_decorator
     def validate_overlap_columns(
         self,
-        table: DataInfo
+        table: DataFileInfo
     ) -> None:
         """
         Validate overlap columns for a single table.
@@ -231,9 +237,25 @@ class CoreDataBuilder:
             )
 
     @matches_table_decorator
+    def fill_overlap_columns_sql_DataFileInfo_field(
+        self,
+        table: DataFileInfo,
+    ) -> None:
+        overlap_columns = _get_overlap_columns(
+            con=self.con,
+            table_name=table.label,
+            overlap_start=self.config_data["overlap_start"],
+            overlap_end=self.config_data["overlap_end"],
+        )
+
+        table.overlap_columns_sql = ", ".join(
+            f'"{col}"' for col in overlap_columns
+        )
+
+    @matches_table_decorator
     def merge_entities_into_matches_table(
         self,
-        table: DataInfo
+        table: DataFileInfo,
     ) -> None:
         if table.label == "data_x":
             return
@@ -335,42 +357,126 @@ class CoreDataBuilder:
             )
         """)
 
-    def _unpivot_data_x_from_wide_to_long(self) -> None:
-        overlap_columns = _get_overlap_columns(
-            con=self.con,
-            table_name=self.tables[0].label,
-            overlap_start=self.config_data["overlap_start"],
-            overlap_end=self.config_data["overlap_end"],
-        )
+    # def _unpivot_data_x_from_wide_to_long(self) -> None:
+    #     overlap_columns = _get_overlap_columns(
+    #         con=self.con,
+    #         table_name=self.tables[0].label,
+    #         overlap_start=self.config_data["overlap_start"],
+    #         overlap_end=self.config_data["overlap_end"],
+    #     )
 
-        unpivot_columns_sql = ", ".join(
-            f'"{col}"' for col in overlap_columns
-        )
+    #     unpivot_columns_sql = ", ".join(
+    #         f'"{col}"' for col in overlap_columns
+    #     )
 
-        self.con.execute(f"""
-            CREATE TEMP TABLE data_x_long AS
-            SELECT
-                {self.entity_column_label} AS entity,
-                CAST(col AS INTEGER) AS {self.overlap_column_label},
-                val AS data_x
-            FROM data_x
-            UNPIVOT (
-                val FOR col IN ({unpivot_columns_sql})
-            )
-        """)
+    #     self.con.execute(f"""
+    #         CREATE TEMP TABLE data_x_long AS
+    #         SELECT
+    #             {self.entity_column_label} AS entity,
+    #             CAST(col AS INTEGER) AS {self.overlap_column_label},
+    #             val AS data_x
+    #         FROM data_x
+    #         UNPIVOT (
+    #             val FOR col IN ({unpivot_columns_sql})
+    #         )
+    #     """)
 
 
     def build_core_data_table(self) -> None:
 
-        self._create_empty_core_data_table()
+        # self._create_empty_core_data_table()
         _load_matches_file(
             con=self.con,
             matches_file_path=self.matches_table_path,
             matches_table_label=self.matches_table_label,
         )
-        
 
-        self._unpivot_data_x_from_wide_to_long()
+        self.con.execute(f"""
+            CREATE TABLE core_data AS
+                WITH
+                    data_x_long AS (
+                        SELECT
+                            {self.entity_column_label},
+                            CAST(col AS INTEGER) AS year,
+                            val AS data_x
+                        FROM
+                            data_x
+                        UNPIVOT (
+                            val FOR col IN ({self.tables[0].overlap_columns_sql})
+                        )
+                    ),
+
+                    data_y_long AS (
+                        SELECT
+                            {self.entity_column_label},
+                            CAST(col AS INTEGER) AS year,
+                            val AS data_y
+                        FROM
+                            data_y
+                        UNPIVOT (
+                            val FOR col IN ({self.tables[1].overlap_columns_sql})
+                        )
+                    ),
+
+                    extra_data_point_long AS (
+                        SELECT
+                            {self.entity_column_label},
+                            CAST(col AS INTEGER) AS year,
+                            val AS extra_data_point
+                        FROM
+                            extra_data_point
+                        UNPIVOT (
+                            val FOR col IN ({self.tables[2].overlap_columns_sql})
+                        )
+                    ),
+
+                    extra_data_x_long AS (
+                        SELECT
+                            {self.entity_column_label},
+                            CAST(col AS INTEGER) AS year,
+                            val AS extra_data_x
+                        FROM
+                            extra_data_x
+                        UNPIVOT (
+                            val FOR col IN ({self.tables[3].overlap_columns_sql})
+                        )
+                    )
+
+                SELECT
+                    dx.{self.entity_column_label} AS {self.entity_column_label},
+                    NULL AS data_x_log,
+                    dx.year AS year,
+                    dx.data_x AS data_x,
+                    dy.data_y AS data_y,
+                    edp.extra_data_point AS extra_data_point,
+                    edx.extra_data_x AS extra_data_x
+
+                FROM
+                    data_x_long AS dx
+
+                LEFT JOIN
+                    matches AS m
+                        ON m.data_x = dx.{self.entity_column_label}
+
+                LEFT JOIN
+                    data_y_long AS dy
+                        ON dy.{self.entity_column_label} = m.data_y
+                        AND dy.year = dx.year
+
+                LEFT JOIN
+                    extra_data_point_long AS edp
+                        ON edp.{self.entity_column_label} = m.extra_data_point
+                        AND edp.year = dx.year
+
+                LEFT JOIN
+                    extra_data_x_long AS edx
+                        ON edx.{self.entity_column_label} = m.extra_data_x
+                        AND edx.year = dx.year
+                
+                ORDER BY
+                    {self.entity_column_label},
+                    year
+        """)
 
 
 

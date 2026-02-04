@@ -21,6 +21,7 @@ from plotly_lvlos.core_data.build_matches_table import (
 )
 from plotly_lvlos.core_data.core_data_table_builder import (
     _load_matches_file,
+    _get_overlap_columns,
 )
 from plotly_lvlos.errors.errors_build_core_data import (
     FileReadFailure,
@@ -334,13 +335,16 @@ class CoreDataBuilder:
             )
         """)
 
-    def _build_self_cross_joined_data_x_table(self) -> None:
-        unpivot_columns = ", ".join(
-            f'"{year}"'
-            for year in range(
-                self.config_data["overlap_start"],
-                self.config_data["overlap_end"] + 1
-            )
+    def _unpivot_data_x_from_wide_to_long(self) -> None:
+        overlap_columns = _get_overlap_columns(
+            con=self.con,
+            table_name=self.tables[0].label,
+            overlap_start=self.config_data["overlap_start"],
+            overlap_end=self.config_data["overlap_end"],
+        )
+
+        unpivot_columns_sql = ", ".join(
+            f'"{col}"' for col in overlap_columns
         )
 
         self.con.execute(f"""
@@ -351,7 +355,7 @@ class CoreDataBuilder:
                 val AS data_x
             FROM data_x
             UNPIVOT (
-                val FOR col IN ({unpivot_columns})
+                val FOR col IN ({unpivot_columns_sql})
             )
         """)
 
@@ -366,7 +370,7 @@ class CoreDataBuilder:
         )
         
 
-        self._build_self_cross_joined_data_x_table()
+        self._unpivot_data_x_from_wide_to_long()
 
 
 
@@ -374,32 +378,3 @@ class CoreDataBuilder:
     def print_tables_info(self) -> None:
         for table in self.tables:
             print(table)
-
-
-
-
-    # def _generate_core_data_rows(self) -> None:
-    #     self.con.execute(f"""
-    #         WITH overlap_columns AS (
-    #             SELECT
-    #                 {self.overlap_column_label}
-    #             FROM generate_series(
-    #                 {self.config_data["overlap_start"]},
-    #                 {self.config_data["overlap_end"]}
-    #             ) AS overlap_series({self.overlap_column_label})
-    #         )
-    #         INSERT INTO {self.core_data_table_label} (
-    #             {self.entity_column_label},
-    #             {self.overlap_column_label}
-    #         )
-    #         SELECT
-    #             m.data_x AS {self.entity_column_label},
-    #             oc.{self.overlap_column_label}
-    #         FROM
-    #             {self.matches_table_label} AS m
-    #         CROSS JOIN
-    #             overlap_columns AS oc
-    #         ORDER BY
-    #             {self.entity_column_label},
-    #             {self.overlap_column_label}
-    #     """)

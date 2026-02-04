@@ -114,7 +114,7 @@ class CoreDataBuilder:
 
         print("######")
         df = self.con.execute(
-            f"SELECT * FROM core_data"
+            "SELECT * FROM core_data"
         ).df()
         df.to_html("table.html", index=False)
 

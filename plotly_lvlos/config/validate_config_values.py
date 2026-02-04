@@ -1,7 +1,25 @@
 from plotly_lvlos.config.config_toml_dict_schema import (
     CONFIG_TOML_DICT_SCHEMA_CONSTRAINTS,
 )
-from plotly_lvlos.errors.errors_config import ConfigConstraintError
+from plotly_lvlos.errors.errors_config import (
+    ConfigConstraintError,
+    ConfigOverlapError,
+)
+from plotly_lvlos.core_data.csv_profiles import CSV_PROFILES
+
+
+def _check_olstart_lt_olend(overlap_start: int, overlap_end: int) -> None:
+    """
+    Check that overlap_start is less than overlap_end.
+
+    Raises
+    ------
+    ConfigOverlapError
+        If overlap_start is not less than overlap_end.
+    """
+
+    if overlap_start >= overlap_end:
+        raise ConfigOverlapError()
 
 
 def validate_config_values(config_dict: dict) -> None:
@@ -24,6 +42,7 @@ def validate_config_values(config_dict: dict) -> None:
     ConfigConstraintError
         If any configuration value violates its declared constraints.
     """
+
     for section, keys in CONFIG_TOML_DICT_SCHEMA_CONSTRAINTS.items():
         section_dict = config_dict[section]
 
@@ -55,6 +74,17 @@ def validate_config_values(config_dict: dict) -> None:
                         constraints=constraints,
                     )
 
+                if key.endswith("_profile"):
+                    if value not in CSV_PROFILES:
+                        raise ConfigConstraintError(
+                            section=section,
+                            key=key,
+                            value=value,
+                            constraints={
+                                "allowed_values": list(CSV_PROFILES.keys())
+                            },
+                        )
+
             elif expected_type is int:
                 if "min" in constraints and value < constraints["min"]:
                     raise ConfigConstraintError(
@@ -71,3 +101,8 @@ def validate_config_values(config_dict: dict) -> None:
                         value=value,
                         constraints=constraints,
                     )
+
+    _check_olstart_lt_olend(
+        config_dict["data"]["overlap_start"],
+        config_dict["data"]["overlap_end"],
+    )

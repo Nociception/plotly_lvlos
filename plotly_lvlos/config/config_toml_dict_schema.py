@@ -39,11 +39,17 @@ CONFIG_TOML_DICT_SCHEMA = {
     },
     "data": {
         "x_file": "data/x.csv",  # str
+        "x_file_profile": "clean",  # str
         "y_file": "data/y.csv",  # str
+        "y_file_profile": "clean",  # str
         "extra_data_point_file": "data/edpf.csv",  # str
+        "extra_data_point_file_profile": "clean",  # str
         "extra_data_x_file": "data/edxf.csv",  # str
+        "extra_data_x_file_profile": "clean",  # str
         "entity_column": "country",  # str
         "overlap_column": "year",  # str
+        "overlap_start": 1800,  # int
+        "overlap_end": 2050,  # int
     },
     "analysis": {
         "min_points_per_year": 5,  # int
@@ -84,10 +90,22 @@ CONFIG_TOML_DICT_SCHEMA_CONSTRAINTS = {
             "len_max": 255,
             "strip": True,
         },
+        "x_file_profile": {
+            "type": str,
+            "len_min": 1,
+            "len_max": 50,
+            "strip": True,
+        },
         "y_file": {
             "type": str,
             "len_min": 1,
             "len_max": 255,
+            "strip": True,
+        },
+        "y_file_profile": {
+            "type": str,
+            "len_min": 1,
+            "len_max": 50,
             "strip": True,
         },
         "extra_data_point_file": {
@@ -96,10 +114,22 @@ CONFIG_TOML_DICT_SCHEMA_CONSTRAINTS = {
             "len_max": 255,
             "strip": True,
         },
+        "extra_data_point_file_profile": {
+            "type": str,
+            "len_min": 1,
+            "len_max": 50,
+            "strip": True,
+        },
         "extra_data_x_file": {
             "type": str,
             "len_min": 0,
             "len_max": 255,
+            "strip": True,
+        },
+        "extra_data_x_file_profile": {
+            "type": str,
+            "len_min": 1,
+            "len_max": 50,
             "strip": True,
         },
         "entity_column": {
@@ -113,6 +143,10 @@ CONFIG_TOML_DICT_SCHEMA_CONSTRAINTS = {
             "len_min": 1,
             "len_max": 100,
             "strip": True,
+        },
+        "overlap_start": {"type": int},
+        "overlap_end": {
+            "type": int,
         },
     },
     "analysis": {

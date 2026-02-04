@@ -50,12 +50,21 @@ def write_valid_config(
                     file_path = tmp_path / f"{key}.csv"
                     file_path.touch()
                     value = str(file_path)
+
+                elif key.endswith("_profile"):
+                    value = "clean"
+
                 else:
                     len_min = constraints.get("len_min", 1)
                     value = "a" * max(1, len_min)
             elif constraints.get("type") is int:
-                min_val = constraints.get("min", 0)
-                value = max(min_val, 1)
+                if section == "data" and key == "overlap_start":
+                    value = 1800
+                elif section == "data" and key == "overlap_end":
+                    value = 2050
+                else:
+                    min_val = constraints.get("min", 0)
+                    value = max(min_val, 1)
             else:
                 value = default
 
@@ -69,7 +78,6 @@ def write_valid_config(
                 config[section][key] = value
 
     config_file = tmp_path / "config.toml"
-    import tomli_w
 
     with config_file.open("wb") as f:
         tomli_w.dump(config, f)

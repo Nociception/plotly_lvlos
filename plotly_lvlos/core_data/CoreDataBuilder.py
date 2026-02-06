@@ -56,7 +56,7 @@ class CoreDataBuilder:
         self.core_data_table_label = core_data_table_label
         self.overlap_column_label = self.config_data["overlap_column"]
         self.x_entities: list[str] | None = None
-        self.tables: list | None = None
+        self.tables: dict | None = None
 
     def build(self) -> tuple[
         duckdb.DuckDBPyRelation,
@@ -81,20 +81,20 @@ class CoreDataBuilder:
             tables=self.tables,
         )
 
-        # print(self.con.execute("SHOW TABLES").fetchall())
+        print(self.con.execute("SHOW TABLES").fetchall())
 
-        # print("######")
-        # df = self.con.execute(
-        #     "SELECT * FROM core_data"
-        # ).df()
-        # print(df.head())
-        # df.to_html("table.html", index=False)
+        print("######")
+        df = self.con.execute(
+            "SELECT * FROM core_data"
+        ).df()
+        print(df.head())
+        df.to_html("table.html", index=False)
 
-        # # print(self.con.execute("DESCRIBE data_x").fetchall())
-        # print("######")
+        # print(self.con.execute("DESCRIBE data_x").fetchall())
+        print("######")
 
         self.print_tables_info()
-        print(self.tables[0].suffixes)
+        print(self.tables["data_x"].suffixes)
 
         # print(self.config_dict)
 
@@ -307,13 +307,13 @@ class CoreDataBuilder:
         )
         _insert_data_x_entities(
             con=self.con,
-            data_x_table_label=self.tables[0].label,
+            data_x_table_label=self.tables["data_x"].label,
             matches_table_label=self.matches_table_label,
             entity_column_label=self.entity_column_label,
         )
         self.x_entities = _get_entities_from_table(
             con=self.con,
-            table_label=self.tables[0].label,
+            table_label=self.tables["data_x"].label,
             entity_column_label=self.entity_column_label,
         )
         self.merge_entities_into_matches_table()

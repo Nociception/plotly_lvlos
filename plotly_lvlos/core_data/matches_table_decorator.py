@@ -12,6 +12,7 @@ def matches_table_decorator(func):
     @wraps(func)
     def wrapper(self):
         for table in self.tables:
+            table = self.tables[table]
             if not table.status:
                 continue
             try:

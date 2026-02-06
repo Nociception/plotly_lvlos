@@ -54,7 +54,7 @@ def _build_core_data_table(
                     FROM
                         data_x
                     UNPIVOT (
-                        val FOR col IN ({tables[0].overlap_columns_sql})
+                        val FOR col IN ({tables['data_x'].overlap_columns_sql})
                     )
                 ),
 
@@ -66,7 +66,7 @@ def _build_core_data_table(
                     FROM
                         data_y
                     UNPIVOT (
-                        val FOR col IN ({tables[1].overlap_columns_sql})
+                        val FOR col IN ({tables['data_y'].overlap_columns_sql})
                     )
                 ),
 
@@ -78,7 +78,7 @@ def _build_core_data_table(
                     FROM
                         extra_data_point
                     UNPIVOT (
-                        val FOR col IN ({tables[2].overlap_columns_sql})
+                        val FOR col IN ({tables['extra_data_point'].overlap_columns_sql})
                     )
                 ),
 
@@ -90,7 +90,7 @@ def _build_core_data_table(
                     FROM
                         extra_data_x
                     UNPIVOT (
-                        val FOR col IN ({tables[3].overlap_columns_sql})
+                        val FOR col IN ({tables['extra_data_x'].overlap_columns_sql})
                     )
                 )
 

@@ -6,7 +6,10 @@ import os.path
 from plotly_lvlos.core_data.matches_table_decorator import (
     matches_table_decorator
 )
-from plotly_lvlos.core_data.DataFileInfo import DataFileInfo
+from plotly_lvlos.core_data.DataFileInfo import (
+    DataFileInfo,
+    create_DataFileInfo_objects,
+)
 from plotly_lvlos.core_data.csv_profiles import CSV_PROFILES
 from plotly_lvlos.core_data.validate_overlap_columns import (
     _overlap_columns_present_in_table,
@@ -48,50 +51,18 @@ class CoreDataBuilder:
         self.config_dict: dict = config_dict
         self.config_data: dict = self.config_dict["data"]
         self.entity_column_label: str = self.config_data["entity_column"]
-
         self.matches_table_path = "config/matches.xlsx"
         self.matches_table_label = "matches"
-
         self.core_data_table_label = core_data_table_label
         self.overlap_column_label = self.config_data["overlap_column"]
-
         self.x_entities: list[str] | None = None
-
-        self.tables = [
-            DataFileInfo(
-                label="data_x",
-                file=Path(self.config_data["x_file"]),
-                mandatory=True,
-                file_profile=self.config_data["x_file_profile"],
-                overlap_columns_sql=""
-            ),
-            DataFileInfo(
-                label="data_y",
-                file=Path(self.config_data["y_file"]),
-                mandatory=True,
-                file_profile=self.config_data["y_file_profile"],
-                overlap_columns_sql=""
-            ),
-            DataFileInfo(
-                label="extra_data_point",
-                file=Path(self.config_data["extra_data_point_file"]),
-                mandatory=False,
-                file_profile=self.config_data["extra_data_point_file_profile"],
-                overlap_columns_sql=""
-            ),
-            DataFileInfo(
-                label="extra_data_x",
-                file=Path(self.config_data["extra_data_x_file"]),
-                mandatory=False,
-                file_profile=self.config_data["extra_data_x_file_profile"],
-                overlap_columns_sql=""
-            ),
-        ]
+        self.tables: list | None = None
 
     def build(self) -> tuple[
         duckdb.DuckDBPyRelation,
         duckdb.DuckDBPyRelation,
     ]:
+        self.tables = create_DataFileInfo_objects(self.config_dict)
         self.load_core_raw_tables()
         self.validate_entity_first_column_label()
         self.validate_first_column_entities_uniqueness()
@@ -110,19 +81,22 @@ class CoreDataBuilder:
             tables=self.tables,
         )
 
-        print(self.con.execute("SHOW TABLES").fetchall())
+        # print(self.con.execute("SHOW TABLES").fetchall())
 
-        print("######")
-        df = self.con.execute(
-            "SELECT * FROM core_data"
-        ).df()
-        print(df.head())
-        df.to_html("table.html", index=False)
+        # print("######")
+        # df = self.con.execute(
+        #     "SELECT * FROM core_data"
+        # ).df()
+        # print(df.head())
+        # df.to_html("table.html", index=False)
 
-        # print(self.con.execute("DESCRIBE data_x").fetchall())
-        print("######")
+        # # print(self.con.execute("DESCRIBE data_x").fetchall())
+        # print("######")
 
-        # self.print_tables_info()
+        self.print_tables_info()
+        print(self.tables[0].suffixes)
+
+        # print(self.config_dict)
 
     @matches_table_decorator
     def load_core_raw_tables(self, table: DataFileInfo) -> None:

@@ -18,10 +18,7 @@ build:
 	fi
 
 	@echo " Building project..."
-	@if [ ! -f $(CONFIG) ]; then \
-		echo "Config file $(CONFIG) not found!"; \
-		exit 1; \
-	fi
+
 	$(PYTHON) $(BUILD_SCRIPT)
 	@echo "Build complete."
 

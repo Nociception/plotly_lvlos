@@ -116,6 +116,7 @@ class CoreDataBuilder:
         df = self.con.execute(
             "SELECT * FROM core_data"
         ).df()
+        print(df.head())
         df.to_html("table.html", index=False)
 
         # print(self.con.execute("DESCRIBE data_x").fetchall())

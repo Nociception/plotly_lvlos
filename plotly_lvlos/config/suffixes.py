@@ -8,46 +8,55 @@ from plotly_lvlos.errors.errors_config import (
 )
 
 
-REQUIRED_SUFFIXES = [
-    "Y", "Z", "E", "P", "T", "G", "M", "k",
-    "m", "u", "n", "p", "f", "a"
-]
-
-REQUIRED_OPTIONS = [
-    "case_sensitive",
-    "allow_unicode_micro"
-]
-
-
 def _parse_suffixes_toml(suffixes_dict: dict, file_path: Path) -> None:
 
     if "suffixes" not in suffixes_dict:
-        raise SuffixesInvalidSchema(f"Missing required [suffixes] section in {file_path.resolve()}")
-    suffixes = suffixes_dict["suffixes"]
-
-    missing_suffixes = [s for s in REQUIRED_SUFFIXES if s not in suffixes]
-    if missing_suffixes:
         raise SuffixesInvalidSchema(
-            f"Missing suffixes {missing_suffixes} in [suffixes] section of {file_path.resolve()}"
+            f"Missing required [suffixes] section in {file_path.resolve()}"
         )
 
-    non_numeric = [s for s, v in suffixes.items() if not isinstance(v, (int, float))]
+    suffixes = suffixes_dict["suffixes"]
+
+    if not isinstance(suffixes, dict) or not suffixes:
+        raise SuffixesInvalidSchema(
+            f"[suffixes] section must be a non-empty table in {file_path.resolve()}"
+        )
+
+    non_numeric = [
+        key for key, value in suffixes.items()
+        if not isinstance(value, (int, float))
+    ]
+
     if non_numeric:
         raise SuffixesInvalidSchema(
             f"Suffixes {non_numeric} have non-numeric values in {file_path.resolve()}"
         )
 
     if "options" not in suffixes_dict:
-        raise SuffixesInvalidSchema(f"Missing required [options] section in {file_path.resolve()}")
-    options = suffixes_dict["options"]
-
-    missing_options = [o for o in REQUIRED_OPTIONS if o not in options]
-    if missing_options:
         raise SuffixesInvalidSchema(
-            f"Missing options {missing_options} in [options] section of {file_path.resolve()}"
+            f"Missing required [options] section in {file_path.resolve()}"
         )
 
-    non_bool_options = [o for o in REQUIRED_OPTIONS if not isinstance(options[o], bool)]
+    options = suffixes_dict["options"]
+
+    if not isinstance(options, dict):
+        raise SuffixesInvalidSchema(
+            f"[options] section must be a table in {file_path.resolve()}"
+        )
+
+    required_options = {"case_sensitive", "allow_unicode_micro"}
+    missing_options = required_options - options.keys()
+
+    if missing_options:
+        raise SuffixesInvalidSchema(
+            f"Missing options {sorted(missing_options)} in [options] section of {file_path.resolve()}"
+        )
+
+    non_bool_options = [
+        key for key in required_options
+        if not isinstance(options[key], bool)
+    ]
+
     if non_bool_options:
         raise SuffixesInvalidSchema(
             f"Options {non_bool_options} must be boolean in {file_path.resolve()}"

@@ -26,9 +26,7 @@ def load_config(config_path: Path | None = None) -> dict:
             validate_config_values(toml_dict)
             validate_files_exist(toml_dict)
             sanitize_config_sql_identifiers(toml_dict)
-
             load_suffixes_toml(toml_dict)
-
             return toml_dict
     except tomllib.TOMLDecodeError as exc:
         raise ConfigFileInvalid(f"Invalid config TOML: {config_path}") from exc

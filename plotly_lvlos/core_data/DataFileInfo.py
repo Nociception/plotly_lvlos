@@ -9,7 +9,7 @@ class DataFileInfo:
     mandatory: bool
     file_profile: str
     overlap_columns_sql: str
-    suffixes: dict
+    suffixes: dict | None
     status: bool = True
 
 

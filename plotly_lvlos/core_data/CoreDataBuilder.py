@@ -56,7 +56,7 @@ class CoreDataBuilder:
         self.core_data_table_label = core_data_table_label
         self.overlap_column_label = self.config_data["overlap_column"]
         self.x_entities: list[str] | None = None
-        self.tables: dict | None = None
+        self.tables: dict[str, DataFileInfo] | None = None
 
     def build(self) -> tuple[
         duckdb.DuckDBPyRelation,
@@ -94,7 +94,6 @@ class CoreDataBuilder:
         print("######")
 
         self.print_tables_info()
-        print(self.tables["data_x"].suffixes)
 
         # print(self.config_dict)
 
@@ -325,4 +324,4 @@ class CoreDataBuilder:
 
     def print_tables_info(self) -> None:
         for table in self.tables:
-            print(table)
+            print(table, self.tables[table], self.tables[table].suffixes)

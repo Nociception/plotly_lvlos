@@ -1,8 +1,9 @@
-import csv
 import duckdb
-from pathlib import Path
 import os.path
 
+import polars as pl
+
+from plotly_lvlos.core_data.etl import _convert_suffixes_to_numeric
 from plotly_lvlos.core_data.matches_table_decorator import (
     matches_table_decorator
 )
@@ -10,7 +11,6 @@ from plotly_lvlos.core_data.DataFileInfo import (
     DataFileInfo,
     create_DataFileInfo_objects,
 )
-from plotly_lvlos.core_data.csv_profiles import CSV_PROFILES
 from plotly_lvlos.core_data.validate_overlap_columns import (
     _overlap_columns_present_in_table,
     _overlap_columns_indices_order,
@@ -63,173 +63,161 @@ class CoreDataBuilder:
         duckdb.DuckDBPyRelation,
     ]:
         self.tables = create_DataFileInfo_objects(self.config_dict)
-        self.load_core_raw_tables()
-        self.validate_entity_first_column_label()
-        self.validate_first_column_entities_uniqueness()
-        self.validate_overlap_columns()
-        self.fill_overlap_columns_sql_DataFileInfo_field()
-        self.build_matches_table()
-        _load_matches_file(
-            con=self.con,
-            matches_file_path=self.matches_table_path,
-            matches_table_label=self.matches_table_label,
-        )
-        _build_core_data_table(
-            con=self.con,
-            entity_column_label=self.entity_column_label,
-            overlap_column_label=self.overlap_column_label,
-            tables=self.tables,
-        )
+        
+        
+        self.extract_parse_transform_load()
 
-        print(self.con.execute("SHOW TABLES").fetchall())
 
-        print("######")
-        df = self.con.execute(
-            "SELECT * FROM core_data"
-        ).df()
-        print(df.head())
-        df.to_html("table.html", index=False)
-
-        # print(self.con.execute("DESCRIBE data_x").fetchall())
-        print("######")
-
+        
+        # self.build_matches_table()
+        # _load_matches_file(
+        #     con=self.con,
+        #     matches_file_path=self.matches_table_path,
+        #     matches_table_label=self.matches_table_label,
+        # )
+        # _build_core_data_table(
+        #     con=self.con,
+        #     entity_column_label=self.entity_column_label,
+        #     overlap_column_label=self.overlap_column_label,
+        #     tables=self.tables,
+        # )
+        # print(self.con.execute("SHOW TABLES").fetchall())
+        # print("######")
+        # df = self.con.execute(
+        #     "SELECT * FROM core_data"
+        # ).df()
+        # print(df.head())
+        # df.to_html("table.html", index=False)
+        # # print(self.con.execute("DESCRIBE data_x").fetchall())
+        # print("######")
         self.print_tables_info()
-
         # print(self.config_dict)
 
     @matches_table_decorator
-    def load_core_raw_tables(self, table: DataFileInfo) -> None:
-        profile_kwargs = CSV_PROFILES[table.file_profile]
-
-        with open(table.file, newline="") as f:
-            reader = csv.reader(f)
-            header = next(reader)
-
-        profile_kwargs["dtype"] = ["VARCHAR"] * len(header)
-
+    def extract_parse_transform_load(self, table: DataFileInfo):
         try:
-            self.con.register(
-                table.label,
-                self.con.read_csv(
-                    str(table.file),
-                    header=True,
-                    delimiter=",",
-                    quotechar='"',
-                    **profile_kwargs,
-                ),
+            df = pl.read_csv(
+                table.file,
+                quote_char=None,
+                try_parse_dates=False,
+                infer_schema_length=0,
+                truncate_ragged_lines=True,
             )
-        except (
-            duckdb.IOException,
-            duckdb.ParserException,
-            duckdb.ConversionException,
-            duckdb.InvalidInputException,
-            duckdb.InternalException,
-        ) as e:
+            table.df = df.with_columns(pl.all().cast(pl.Utf8))
+
+        except Exception as e:
             raise FileReadFailure(table, e)
 
-    @matches_table_decorator
-    def validate_entity_first_column_label(
-        self,
-        table: DataFileInfo,
-    ) -> None:
+        # self.validate_entity_first_column_label()
+        # self.validate_first_column_entities_uniqueness()
+        # self.validate_overlap_columns()
+        # self.fill_overlap_columns_sql_DataFileInfo_field()
 
-        first_col = self.con.execute(
-            f"""
-            SELECT
-                name
-            FROM
-                pragma_table_info('{table.label}')
-            ORDER BY
-                cid
-            LIMIT
-                1
-            """
-        ).fetchone()[0]
-        if first_col != self.entity_column_label:
-            raise EntityColumnFailure(
-                f"In table '{table.label}', the first column must be "
-                f"`{self.entity_column_label}`, "
-                f"found `{first_col}` instead."
-            )
 
-    @matches_table_decorator
-    def validate_first_column_entities_uniqueness(
-        self,
-        table: DataFileInfo,
-    ) -> None:
 
-        total_rows, distinct_entities = self.con.execute(
-        f"""
-        SELECT
-            COUNT(*) AS total_rows,
-            COUNT(DISTINCT {self.entity_column_label}) AS distinct_entities
-        FROM
-            {table.label}
-        """
-        ).fetchone()
+    # @matches_table_decorator
+    # def validate_entity_first_column_label(
+    #     self,
+    #     table: DataFileInfo,
+    # ) -> None:
 
-        if total_rows != distinct_entities:
-            raise EntityUniquenessFailure(
-                f"In {table.label}, entity column "
-                f"`{self.entity_column_label}` contains duplicated values "
-                f"({total_rows - distinct_entities} duplicate rows detected)."
-            )
+    #     first_col = self.con.execute(
+    #         f"""
+    #         SELECT
+    #             name
+    #         FROM
+    #             pragma_table_info('{table.label}')
+    #         ORDER BY
+    #             cid
+    #         LIMIT
+    #             1
+    #         """
+    #     ).fetchone()[0]
+    #     if first_col != self.entity_column_label:
+    #         raise EntityColumnFailure(
+    #             f"In table '{table.label}', the first column must be "
+    #             f"`{self.entity_column_label}`, "
+    #             f"found `{first_col}` instead."
+    #         )
 
-    @matches_table_decorator
-    def validate_overlap_columns(
-        self,
-        table: DataFileInfo
-    ) -> None:
-        """
-        Validate overlap columns for a single table.
+    # @matches_table_decorator
+    # def validate_first_column_entities_uniqueness(
+    #     self,
+    #     table: DataFileInfo,
+    # ) -> None:
 
-        Ensures that overlap_start and overlap_end columns exist,
-        are ordered correctly, and define a continuous integer range.
-        """
+    #     total_rows, distinct_entities = self.con.execute(
+    #     f"""
+    #     SELECT
+    #         COUNT(*) AS total_rows,
+    #         COUNT(DISTINCT {self.entity_column_label}) AS distinct_entities
+    #     FROM
+    #         {table.label}
+    #     """
+    #     ).fetchone()
 
-        columns = self.con.table(table.label).columns
+    #     if total_rows != distinct_entities:
+    #         raise EntityUniquenessFailure(
+    #             f"In {table.label}, entity column "
+    #             f"`{self.entity_column_label}` contains duplicated values "
+    #             f"({total_rows - distinct_entities} duplicate rows detected)."
+    #         )
 
-        overlap_start = str(self.config_data["overlap_start"])
-        overlap_end = str(self.config_data["overlap_end"])
-        _overlap_columns_present_in_table(
-            table=table,
-            columns=columns,
-            overlap_start=overlap_start,
-            overlap_end=overlap_end,
-        )
+    # @matches_table_decorator
+    # def validate_overlap_columns(
+    #     self,
+    #     table: DataFileInfo
+    # ) -> None:
+    #     """
+    #     Validate overlap columns for a single table.
 
-        if table.mandatory:
-            start_index=columns.index(overlap_start)
-            end_index=columns.index(overlap_end)
+    #     Ensures that overlap_start and overlap_end columns exist,
+    #     are ordered correctly, and define a continuous integer range.
+    #     """
 
-            _overlap_columns_indices_order(
-                table_label=table.label,
-                start_index=start_index,
-                end_index=end_index,
-            )
+    #     columns = self.con.table(table.label).columns
 
-            _overlap_columns_contiguous_int(
-                table_label=table.label,
-                columns=columns,
-                start_index=start_index,
-                end_index=end_index,
-            )
+    #     overlap_start = str(self.config_data["overlap_start"])
+    #     overlap_end = str(self.config_data["overlap_end"])
+    #     _overlap_columns_present_in_table(
+    #         table=table,
+    #         columns=columns,
+    #         overlap_start=overlap_start,
+    #         overlap_end=overlap_end,
+    #     )
 
-    @matches_table_decorator
-    def fill_overlap_columns_sql_DataFileInfo_field(
-        self,
-        table: DataFileInfo,
-    ) -> None:
-        overlap_columns = _get_overlap_columns(
-            con=self.con,
-            table_name=table.label,
-            overlap_start=self.config_data["overlap_start"],
-            overlap_end=self.config_data["overlap_end"],
-        )
+    #     if table.mandatory:
+    #         start_index=columns.index(overlap_start)
+    #         end_index=columns.index(overlap_end)
 
-        table.overlap_columns_sql = ", ".join(
-            f'"{col}"' for col in overlap_columns
-        )
+    #         _overlap_columns_indices_order(
+    #             table_label=table.label,
+    #             start_index=start_index,
+    #             end_index=end_index,
+    #         )
+
+    #         _overlap_columns_contiguous_int(
+    #             table_label=table.label,
+    #             columns=columns,
+    #             start_index=start_index,
+    #             end_index=end_index,
+    #         )
+
+    # @matches_table_decorator
+    # def fill_overlap_columns_sql_DataFileInfo_field(
+    #     self,
+    #     table: DataFileInfo,
+    # ) -> None:
+    #     overlap_columns = _get_overlap_columns(
+    #         con=self.con,
+    #         table_name=table.label,
+    #         overlap_start=self.config_data["overlap_start"],
+    #         overlap_end=self.config_data["overlap_end"],
+    #     )
+
+    #     table.overlap_columns_sql = ", ".join(
+    #         f'"{col}"' for col in overlap_columns
+    #     )
 
     @matches_table_decorator
     def merge_entities_into_matches_table(

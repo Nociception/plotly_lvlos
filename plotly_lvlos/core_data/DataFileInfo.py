@@ -1,6 +1,8 @@
 from dataclasses import dataclass
 from pathlib import Path
 
+import polars as pl
+
 
 @dataclass
 class DataFileInfo:
@@ -10,6 +12,7 @@ class DataFileInfo:
     file_profile: str
     overlap_columns_sql: str
     suffixes: dict | None
+    df: pl.DataFrame | None = None
     status: bool = True
 
 

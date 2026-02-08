@@ -9,6 +9,7 @@ from plotly_lvlos.core_data.matches_table_decorator import (
 from plotly_lvlos.core_data.extract_parse_transform_load import (
     _extract_as_all_varchar,
     _validate_entity_first_column_label,
+    _validate_first_column_entities_uniqueness,
 )
 from plotly_lvlos.core_data.DataFileInfo import (
     DataFileInfo,
@@ -100,40 +101,21 @@ class CoreDataBuilder:
     def extract_parse_transform_load(self, table: DataFileInfo):
 
         _extract_as_all_varchar(table=table)
-
         _validate_entity_first_column_label(
             table=table,
             entity_column_label=self.entity_column_label,
         )
-        
+        _validate_first_column_entities_uniqueness(
+            table=table,
+            entity_column_label=self.entity_column_label,
+        )
 
-        # self.validate_first_column_entities_uniqueness()
+
         # self.validate_overlap_columns()
+
+
         # self.fill_overlap_columns_sql_DataFileInfo_field()
 
-
-    # @matches_table_decorator
-    # def validate_first_column_entities_uniqueness(
-    #     self,
-    #     table: DataFileInfo,
-    # ) -> None:
-
-    #     total_rows, distinct_entities = self.con.execute(
-    #     f"""
-    #     SELECT
-    #         COUNT(*) AS total_rows,
-    #         COUNT(DISTINCT {self.entity_column_label}) AS distinct_entities
-    #     FROM
-    #         {table.label}
-    #     """
-    #     ).fetchone()
-
-    #     if total_rows != distinct_entities:
-    #         raise EntityUniquenessFailure(
-    #             f"In {table.label}, entity column "
-    #             f"`{self.entity_column_label}` contains duplicated values "
-    #             f"({total_rows - distinct_entities} duplicate rows detected)."
-    #         )
 
     # @matches_table_decorator
     # def validate_overlap_columns(
@@ -191,96 +173,96 @@ class CoreDataBuilder:
     #         f'"{col}"' for col in overlap_columns
     #     )
 
-    @matches_table_decorator
-    def merge_entities_into_matches_table(
-        self,
-        table: DataFileInfo,
-    ) -> None:
-        if table.label == "data_x":
-            return
+    # @matches_table_decorator
+    # def merge_entities_into_matches_table(
+    #     self,
+    #     table: DataFileInfo,
+    # ) -> None:
+    #     if table.label == "data_x":
+    #         return
      
-        from rapidfuzz import fuzz, process
+    #     from rapidfuzz import fuzz, process
 
-        match_threshold: int = 90
-        table_entities = _get_entities_from_table(
-            con=self.con,
-            table_label=table.label,
-            entity_column_label=self.entity_column_label
-        )
-        matches = []
-        for table_entity in table_entities:
-            best_match_in_x, score, _ = process.extractOne(
-                table_entity,
-                self.x_entities,
-                scorer=fuzz.WRatio
-            )
-            if score >= 100:
-                matches.append((table_entity, best_match_in_x, "exact", 1.0))
-            elif score >= match_threshold:
-                matches.append((table_entity, best_match_in_x, "fuzzy", score / 100.0))
-            else:
-                matches.append((table_entity, None, "unmatched", 0.0))
+    #     match_threshold: int = 90
+    #     table_entities = _get_entities_from_table(
+    #         con=self.con,
+    #         table_label=table.label,
+    #         entity_column_label=self.entity_column_label
+    #     )
+    #     matches = []
+    #     for table_entity in table_entities:
+    #         best_match_in_x, score, _ = process.extractOne(
+    #             table_entity,
+    #             self.x_entities,
+    #             scorer=fuzz.WRatio
+    #         )
+    #         if score >= 100:
+    #             matches.append((table_entity, best_match_in_x, "exact", 1.0))
+    #         elif score >= match_threshold:
+    #             matches.append((table_entity, best_match_in_x, "fuzzy", score / 100.0))
+    #         else:
+    #             matches.append((table_entity, None, "unmatched", 0.0))
         
-        for table_entity, x_match, match_type, confidence in matches:
-            if x_match is not None:
-                self.con.execute(f"""
-                    UPDATE
-                        {self.matches_table_label}
-                    SET
-                        {table.label} = ?, {table.label}_match_type = ?, {table.label}_confidence = ?
-                    WHERE
-                        data_x = ?
-                    """,
-                    (table_entity, match_type, confidence, x_match)
-                )
+    #     for table_entity, x_match, match_type, confidence in matches:
+    #         if x_match is not None:
+    #             self.con.execute(f"""
+    #                 UPDATE
+    #                     {self.matches_table_label}
+    #                 SET
+    #                     {table.label} = ?, {table.label}_match_type = ?, {table.label}_confidence = ?
+    #                 WHERE
+    #                     data_x = ?
+    #                 """,
+    #                 (table_entity, match_type, confidence, x_match)
+    #             )
 
-            else:
-                self.con.execute(f"""
-                    INSERT INTO {self.matches_table_label} (
-                        data_x,
-                        {table.label},
-                        {table.label}_match_type,
-                        {table.label}_confidence
-                    )
-                    VALUES (?, ?, ?, ?)
-                    """,
-                    (
-                        None,
-                        table_entity,
-                        "unmatched",
-                        0.0,
-                    ),
-                )
+    #         else:
+    #             self.con.execute(f"""
+    #                 INSERT INTO {self.matches_table_label} (
+    #                     data_x,
+    #                     {table.label},
+    #                     {table.label}_match_type,
+    #                     {table.label}_confidence
+    #                 )
+    #                 VALUES (?, ?, ?, ?)
+    #                 """,
+    #                 (
+    #                     None,
+    #                     table_entity,
+    #                     "unmatched",
+    #                     0.0,
+    #                 ),
+    #             )
             
-    def build_matches_table(self) -> None:
-        """TODO: log these prints"""
-        if os.path.exists(self.matches_table_path):
-            print("Matches file provided; using it as is.")
-            return
-        print("No matches file provided.")
-        print("Automatic matches table generation in progress...")
+    # def build_matches_table(self) -> None:
+    #     """TODO: log these prints"""
+    #     if os.path.exists(self.matches_table_path):
+    #         print("Matches file provided; using it as is.")
+    #         return
+    #     print("No matches file provided.")
+    #     print("Automatic matches table generation in progress...")
             
-        _create_empty_matches_table(
-            con=self.con,
-            matches_table_label=self.matches_table_label,
-        )
-        _insert_data_x_entities(
-            con=self.con,
-            data_x_table_label=self.tables["data_x"].label,
-            matches_table_label=self.matches_table_label,
-            entity_column_label=self.entity_column_label,
-        )
-        self.x_entities = _get_entities_from_table(
-            con=self.con,
-            table_label=self.tables["data_x"].label,
-            entity_column_label=self.entity_column_label,
-        )
-        self.merge_entities_into_matches_table()
-        _export_matches_excel(
-            con=self.con,
-            matches_table_label=self.matches_table_label,
-            output_path=self.matches_table_path,
-        )
+    #     _create_empty_matches_table(
+    #         con=self.con,
+    #         matches_table_label=self.matches_table_label,
+    #     )
+    #     _insert_data_x_entities(
+    #         con=self.con,
+    #         data_x_table_label=self.tables["data_x"].label,
+    #         matches_table_label=self.matches_table_label,
+    #         entity_column_label=self.entity_column_label,
+    #     )
+    #     self.x_entities = _get_entities_from_table(
+    #         con=self.con,
+    #         table_label=self.tables["data_x"].label,
+    #         entity_column_label=self.entity_column_label,
+    #     )
+    #     self.merge_entities_into_matches_table()
+    #     _export_matches_excel(
+    #         con=self.con,
+    #         matches_table_label=self.matches_table_label,
+    #         output_path=self.matches_table_path,
+    #     )
 
     def print_tables_info(self) -> None:
         for table in self.tables:

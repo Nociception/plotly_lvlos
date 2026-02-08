@@ -13,6 +13,7 @@ class DataFileInfo:
     overlap_columns_sql: str
     suffixes: dict | None
     df: pl.DataFrame | None = None
+    overlap_columns: list[str] | None = None
     status: bool = True
 
 

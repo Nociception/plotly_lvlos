@@ -8,6 +8,19 @@ TEST_DIR = tests
 
 build:
 
+	@if [ -f data_x_debug.csv ]; then \
+		rm data_x_debug.csv; \
+	fi
+	@if [ -f data_x_debug.csv ]; then \
+		data_x_debug.csv; \
+	fi
+	@if [ -f extra_data_point.csv ]; then \
+		rm extra_data_point.csv; \
+	fi
+	@if [ -f extra_data_x.csv ]; then \
+		rm extra_data_x.csv; \
+	fi
+
 	@if [ -f table.html ]; then \
 		rm table.html; \
 	fi

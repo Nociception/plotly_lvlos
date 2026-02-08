@@ -10,7 +10,7 @@ from plotly_lvlos.errors.errors_build_core_data import (
 )
 
 
-def matches_table_decorator(func):
+def all_tables_decorator(func):
     @wraps(func)
     def wrapper(self):
         for table_name in self.tables:

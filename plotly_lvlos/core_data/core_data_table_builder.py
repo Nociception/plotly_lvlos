@@ -2,39 +2,6 @@ import duckdb
 
 from plotly_lvlos.core_data.DataFileInfo import DataFileInfo
 
-def _get_overlap_columns(
-    con: duckdb.DuckDBPyConnection | None = None,
-    table_name: str = "",
-    overlap_start: int = -1,
-    overlap_end: int = -1,
-) -> list[str]:
-    info = con.execute(
-        f"PRAGMA table_info('{table_name}')"
-    ).fetchall()
-
-    overlap_columns: list[str] = []
-
-    for _, name, *_ in info:
-        try:
-            value = int(name)
-        except ValueError:
-            continue
-
-        if (
-            overlap_start
-            <= value
-            <= overlap_end
-        ):
-            overlap_columns.append(name)
-
-    if not overlap_columns:
-        raise ValueError(
-            f"No overlap columns found in table '{table_name}' "
-            f"for interval "
-            f"[{overlap_start} ; {overlap_end}]"
-        )
-
-    return overlap_columns
 
 def _build_core_data_table(
     con: duckdb.DuckDBPyConnection | None = None,

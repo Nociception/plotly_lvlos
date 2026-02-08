@@ -101,3 +101,37 @@ def _validate_overlap_columns(
                 start_index=start_index,
                 end_index=end_index,
             )
+
+
+def _fill_overlap_columns_DataFileInfo_field(
+    table: DataFileInfo | None = None,
+    overlap_start: int = -1,
+    overlap_end: int = -1,
+) -> None:
+    overlap_columns: list[str] = []
+
+    for name in table.df.columns:
+        try:
+            value = int(name)
+        except ValueError:
+            continue
+
+        if overlap_start <= value <= overlap_end:
+            overlap_columns.append(name)
+
+    if not overlap_columns:
+        raise ValueError(
+            f"No overlap columns found in table '{table.label}' "
+            f"for interval [{overlap_start} ; {overlap_end}]"
+        )
+
+    table.overlap_columns = overlap_columns
+
+
+def _fill_overlap_columns_sql_DataFileInfo_field(
+    table: DataFileInfo,
+) -> None:
+
+    table.overlap_columns_sql = ", ".join(
+        f'"{col}"' for col in table.overlap_columns
+    )

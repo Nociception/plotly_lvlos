@@ -3,23 +3,23 @@ import os.path
 
 import polars as pl
 
-from plotly_lvlos.core_data.matches_table_decorator import (
-    matches_table_decorator
+from plotly_lvlos.core_data.all_tables_decorator import (
+    all_tables_decorator
 )
 from plotly_lvlos.core_data.extract_parse_transform_load import (
     _extract_as_all_varchar,
     _validate_entity_first_column_label,
     _validate_first_column_entities_uniqueness,
+    _convert_according_to_suffixes,
 )
 from plotly_lvlos.core_data.DataFileInfo import (
     DataFileInfo,
     create_DataFileInfo_objects,
 )
-from plotly_lvlos.core_data.validate_overlap_columns import (
+from plotly_lvlos.core_data.overlap_columns import (
     _validate_overlap_columns,
-    _overlap_columns_present_in_table,
-    _overlap_columns_indices_order,
-    _overlap_columns_contiguous_int,
+    _fill_overlap_columns_DataFileInfo_field,
+    _fill_overlap_columns_sql_DataFileInfo_field,
 )
 from plotly_lvlos.core_data.build_matches_table import (
     _create_empty_matches_table,
@@ -29,7 +29,6 @@ from plotly_lvlos.core_data.build_matches_table import (
     _load_matches_file,
 )
 from plotly_lvlos.core_data.core_data_table_builder import (
-    _get_overlap_columns,
     _build_core_data_table,
 )
 from plotly_lvlos.errors.errors_build_core_data import (
@@ -40,7 +39,6 @@ from plotly_lvlos.errors.errors_build_core_data import (
 
 
 class CoreDataBuilder:
-
     def __init__(
         self,
         con : duckdb.DuckDBPyConnection | None,
@@ -86,6 +84,9 @@ class CoreDataBuilder:
         #     overlap_column_label=self.overlap_column_label,
         #     tables=self.tables,
         # )
+
+
+
         # print(self.con.execute("SHOW TABLES").fetchall())
         # print("######")
         # df = self.con.execute(
@@ -98,7 +99,7 @@ class CoreDataBuilder:
         self.print_tables_info()
         # print(self.config_dict)
 
-    @matches_table_decorator
+    @all_tables_decorator
     def extract_parse_transform_load(self, table: DataFileInfo):
         _extract_as_all_varchar(table=table)
         _validate_entity_first_column_label(
@@ -114,18 +115,32 @@ class CoreDataBuilder:
             overlap_start=str(self.config_data["overlap_start"]),
             overlap_end=str(self.config_data["overlap_end"]),
         )
+        _fill_overlap_columns_DataFileInfo_field(
+            table=table,
+            overlap_start=self.config_data["overlap_start"],
+            overlap_end=self.config_data["overlap_end"],
+        )
+        _fill_overlap_columns_sql_DataFileInfo_field(table=table)
 
 
-        # self.fill_overlap_columns_sql_DataFileInfo_field()
 
-        
-        # transform (suffixes)
+        # _convert_according_to_suffixes(
+        #     table=table,
+        #     default_suffixes=self.config_dict["suffixes"]["default"],
+        # )
+
+
+
+        print("################")
+        table.df.write_csv(f"{table.label}_debug.csv")
+        print(table.df.describe())
+        print("################")
+
         # load into duckdb
 
 
 
     
-    # @matches_table_decorator
     # def fill_overlap_columns_sql_DataFileInfo_field(
     #     self,
     #     table: DataFileInfo,
@@ -141,7 +156,7 @@ class CoreDataBuilder:
     #         f'"{col}"' for col in overlap_columns
     #     )
 
-    # @matches_table_decorator
+    # @all_tables_decorator
     # def merge_entities_into_matches_table(
     #     self,
     #     table: DataFileInfo,
@@ -209,7 +224,9 @@ class CoreDataBuilder:
     #         return
     #     print("No matches file provided.")
     #     print("Automatic matches table generation in progress...")
-            
+        
+    #     self.fill_overlap_columns_sql_DataFileInfo_field()
+
     #     _create_empty_matches_table(
     #         con=self.con,
     #         matches_table_label=self.matches_table_label,

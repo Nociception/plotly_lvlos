@@ -3,9 +3,12 @@ import os.path
 
 import polars as pl
 
-from plotly_lvlos.core_data.etl import _convert_suffixes_to_numeric
 from plotly_lvlos.core_data.matches_table_decorator import (
     matches_table_decorator
+)
+from plotly_lvlos.core_data.extract_parse_transform_load import (
+    _extract_as_all_varchar,
+    _validate_entity_first_column_label,
 )
 from plotly_lvlos.core_data.DataFileInfo import (
     DataFileInfo,
@@ -95,50 +98,19 @@ class CoreDataBuilder:
 
     @matches_table_decorator
     def extract_parse_transform_load(self, table: DataFileInfo):
-        try:
-            df = pl.read_csv(
-                table.file,
-                quote_char=None,
-                try_parse_dates=False,
-                infer_schema_length=0,
-                truncate_ragged_lines=True,
-            )
-            table.df = df.with_columns(pl.all().cast(pl.Utf8))
 
-        except Exception as e:
-            raise FileReadFailure(table, e)
+        _extract_as_all_varchar(table=table)
 
-        # self.validate_entity_first_column_label()
+        _validate_entity_first_column_label(
+            table=table,
+            entity_column_label=self.entity_column_label,
+        )
+        
+
         # self.validate_first_column_entities_uniqueness()
         # self.validate_overlap_columns()
         # self.fill_overlap_columns_sql_DataFileInfo_field()
 
-
-
-    # @matches_table_decorator
-    # def validate_entity_first_column_label(
-    #     self,
-    #     table: DataFileInfo,
-    # ) -> None:
-
-    #     first_col = self.con.execute(
-    #         f"""
-    #         SELECT
-    #             name
-    #         FROM
-    #             pragma_table_info('{table.label}')
-    #         ORDER BY
-    #             cid
-    #         LIMIT
-    #             1
-    #         """
-    #     ).fetchone()[0]
-    #     if first_col != self.entity_column_label:
-    #         raise EntityColumnFailure(
-    #             f"In table '{table.label}', the first column must be "
-    #             f"`{self.entity_column_label}`, "
-    #             f"found `{first_col}` instead."
-    #         )
 
     # @matches_table_decorator
     # def validate_first_column_entities_uniqueness(

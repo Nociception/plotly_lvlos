@@ -16,6 +16,7 @@ from plotly_lvlos.core_data.DataFileInfo import (
     create_DataFileInfo_objects,
 )
 from plotly_lvlos.core_data.validate_overlap_columns import (
+    _validate_overlap_columns,
     _overlap_columns_present_in_table,
     _overlap_columns_indices_order,
     _overlap_columns_contiguous_int,
@@ -99,7 +100,6 @@ class CoreDataBuilder:
 
     @matches_table_decorator
     def extract_parse_transform_load(self, table: DataFileInfo):
-
         _extract_as_all_varchar(table=table)
         _validate_entity_first_column_label(
             table=table,
@@ -109,54 +109,22 @@ class CoreDataBuilder:
             table=table,
             entity_column_label=self.entity_column_label,
         )
-
-
-        # self.validate_overlap_columns()
+        _validate_overlap_columns(
+            table=table,
+            overlap_start=str(self.config_data["overlap_start"]),
+            overlap_end=str(self.config_data["overlap_end"]),
+        )
 
 
         # self.fill_overlap_columns_sql_DataFileInfo_field()
 
+        
+        # transform (suffixes)
+        # load into duckdb
 
-    # @matches_table_decorator
-    # def validate_overlap_columns(
-    #     self,
-    #     table: DataFileInfo
-    # ) -> None:
-    #     """
-    #     Validate overlap columns for a single table.
 
-    #     Ensures that overlap_start and overlap_end columns exist,
-    #     are ordered correctly, and define a continuous integer range.
-    #     """
 
-    #     columns = self.con.table(table.label).columns
-
-    #     overlap_start = str(self.config_data["overlap_start"])
-    #     overlap_end = str(self.config_data["overlap_end"])
-    #     _overlap_columns_present_in_table(
-    #         table=table,
-    #         columns=columns,
-    #         overlap_start=overlap_start,
-    #         overlap_end=overlap_end,
-    #     )
-
-    #     if table.mandatory:
-    #         start_index=columns.index(overlap_start)
-    #         end_index=columns.index(overlap_end)
-
-    #         _overlap_columns_indices_order(
-    #             table_label=table.label,
-    #             start_index=start_index,
-    #             end_index=end_index,
-    #         )
-
-    #         _overlap_columns_contiguous_int(
-    #             table_label=table.label,
-    #             columns=columns,
-    #             start_index=start_index,
-    #             end_index=end_index,
-    #         )
-
+    
     # @matches_table_decorator
     # def fill_overlap_columns_sql_DataFileInfo_field(
     #     self,

@@ -73,3 +73,31 @@ def _overlap_columns_contiguous_int(
             f"Overlap columns in table '{table_label}' are not contiguous. "
             f"Expected {expected_values}, found {overlap_values}."
         )
+
+
+def _validate_overlap_columns(
+    table: DataFileInfo | None = None,
+    overlap_start: str | None = "",
+    overlap_end: str | None = "",
+) -> None:
+        columns = table.df.columns
+        _overlap_columns_present_in_table(
+            table=table,
+            columns=columns,
+            overlap_start=overlap_start,
+            overlap_end=overlap_end,
+        )
+        if table.mandatory:
+            start_index=columns.index(overlap_start)
+            end_index=columns.index(overlap_end)
+            _overlap_columns_indices_order(
+                table_label=table.label,
+                start_index=start_index,
+                end_index=end_index,
+            )
+            _overlap_columns_contiguous_int(
+                table_label=table.label,
+                columns=columns,
+                start_index=start_index,
+                end_index=end_index,
+            )

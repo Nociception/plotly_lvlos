@@ -9,7 +9,7 @@ class PlotlyLvlos:
 
         self.config_dict = config_dict
 
-        self.con = duckdb.connect()
+        self.con = duckdb.connect("core_data.duckdb")
 
         self.frames = None
 

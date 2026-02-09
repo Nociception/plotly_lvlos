@@ -11,6 +11,7 @@ from plotly_lvlos.core_data.extract_parse_transform_load import (
     _validate_entity_first_column_label,
     _validate_first_column_entities_uniqueness,
     _convert_according_to_suffixes,
+    _load_into_duckdb,
 )
 from plotly_lvlos.core_data.DataFileInfo import (
     DataFileInfo,
@@ -66,8 +67,6 @@ class CoreDataBuilder:
         duckdb.DuckDBPyRelation,
     ]:
         self.tables = create_DataFileInfo_objects(self.config_dict)
-        
-        
         self.extract_parse_transform_load()
 
 
@@ -78,6 +77,11 @@ class CoreDataBuilder:
         #     matches_file_path=self.matches_table_path,
         #     matches_table_label=self.matches_table_label,
         # )
+
+
+
+
+
         # _build_core_data_table(
         #     con=self.con,
         #     entity_column_label=self.entity_column_label,
@@ -125,33 +129,8 @@ class CoreDataBuilder:
             table=table,
             default_suffixes=self.config_dict["suffixes"]["default"],
         )
+        _load_into_duckdb(duckdb_conn=self.con, table=table)
 
-
-
-        # print("################")
-        # table.df.write_csv(f"{table.label}_debug.csv")
-        # print(table.df.describe())
-        # print("################")
-
-        # load into duckdb
-
-
-
-    
-    # def fill_overlap_columns_sql_DataFileInfo_field(
-    #     self,
-    #     table: DataFileInfo,
-    # ) -> None:
-    #     overlap_columns = _get_overlap_columns(
-    #         con=self.con,
-    #         table_name=table.label,
-    #         overlap_start=self.config_data["overlap_start"],
-    #         overlap_end=self.config_data["overlap_end"],
-    #     )
-
-    #     table.overlap_columns_sql = ", ".join(
-    #         f'"{col}"' for col in overlap_columns
-    #     )
 
     # @all_tables_decorator
     # def merge_entities_into_matches_table(

@@ -1,4 +1,5 @@
 import polars as pl
+import duckdb
 
 from plotly_lvlos.core_data.DataFileInfo import DataFileInfo
 from plotly_lvlos.core_data.csv_profiles import CSV_PROFILES
@@ -83,3 +84,20 @@ def _convert_according_to_suffixes(table: DataFileInfo, default_suffixes: dict[s
         ).alias(col)
         for col in num_cols
     ])
+
+
+def _load_into_duckdb(
+    duckdb_conn: duckdb.DuckDBPyConnection | None = None,
+    table: DataFileInfo | None = None,
+) -> None:
+    duckdb_conn.execute(f"DROP TABLE IF EXISTS {table.label}")
+    duckdb_conn.register("arrow_tmp", table.df.to_arrow())
+    duckdb_conn.execute(f"""
+        CREATE TABLE
+            {table.label} AS
+                SELECT
+                    *
+                FROM
+                    arrow_tmp
+    """)
+    duckdb_conn.unregister("arrow_tmp")

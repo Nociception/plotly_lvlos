@@ -28,6 +28,7 @@ from plotly_lvlos.core_data.build_matches_table import (
     _get_entities_from_table,
     _export_matches_excel,
     _load_matches_file,
+    _fuzz_match_entities,
 )
 from plotly_lvlos.core_data.core_data_table_builder import (
     _build_core_data_table,
@@ -68,17 +69,12 @@ class CoreDataBuilder:
     ]:
         self.tables = create_DataFileInfo_objects(self.config_dict)
         self.extract_parse_transform_load()
-
-
-        
-        # self.build_matches_table()
-        # _load_matches_file(
-        #     con=self.con,
-        #     matches_file_path=self.matches_table_path,
-        #     matches_table_label=self.matches_table_label,
-        # )
-
-
+        self.build_matches_table()
+        _load_matches_file(
+            con=self.con,
+            matches_file_path=self.matches_table_path,
+            matches_table_label=self.matches_table_label,
+        )
 
 
 
@@ -131,99 +127,50 @@ class CoreDataBuilder:
         )
         _load_into_duckdb(duckdb_conn=self.con, table=table)
 
+    @all_tables_decorator
+    def merge_entities_into_matches_table(
+        self,
+        table: DataFileInfo,
+    ) -> None:
+        if table.label == "data_x":
+            return
+        _fuzz_match_entities(
+            con=self.con,
+            table=table,
+            entity_column_label=self.entity_column_label,
+            matches_table_label=self.matches_table_label,
+            x_entities=self.x_entities,
+        )
 
-    # @all_tables_decorator
-    # def merge_entities_into_matches_table(
-    #     self,
-    #     table: DataFileInfo,
-    # ) -> None:
-    #     if table.label == "data_x":
-    #         return
-     
-    #     from rapidfuzz import fuzz, process
-
-    #     match_threshold: int = 90
-    #     table_entities = _get_entities_from_table(
-    #         con=self.con,
-    #         table_label=table.label,
-    #         entity_column_label=self.entity_column_label
-    #     )
-    #     matches = []
-    #     for table_entity in table_entities:
-    #         best_match_in_x, score, _ = process.extractOne(
-    #             table_entity,
-    #             self.x_entities,
-    #             scorer=fuzz.WRatio
-    #         )
-    #         if score >= 100:
-    #             matches.append((table_entity, best_match_in_x, "exact", 1.0))
-    #         elif score >= match_threshold:
-    #             matches.append((table_entity, best_match_in_x, "fuzzy", score / 100.0))
-    #         else:
-    #             matches.append((table_entity, None, "unmatched", 0.0))
+    def build_matches_table(self) -> None:
+        """TODO: log these prints"""
+        if os.path.exists(self.matches_table_path):
+            print("Matches file provided; using it as is.")
+            return
+        print("No matches file provided.")
+        print("Automatic matches table generation in progress...")
         
-    #     for table_entity, x_match, match_type, confidence in matches:
-    #         if x_match is not None:
-    #             self.con.execute(f"""
-    #                 UPDATE
-    #                     {self.matches_table_label}
-    #                 SET
-    #                     {table.label} = ?, {table.label}_match_type = ?, {table.label}_confidence = ?
-    #                 WHERE
-    #                     data_x = ?
-    #                 """,
-    #                 (table_entity, match_type, confidence, x_match)
-    #             )
-
-    #         else:
-    #             self.con.execute(f"""
-    #                 INSERT INTO {self.matches_table_label} (
-    #                     data_x,
-    #                     {table.label},
-    #                     {table.label}_match_type,
-    #                     {table.label}_confidence
-    #                 )
-    #                 VALUES (?, ?, ?, ?)
-    #                 """,
-    #                 (
-    #                     None,
-    #                     table_entity,
-    #                     "unmatched",
-    #                     0.0,
-    #                 ),
-    #             )
-            
-    # def build_matches_table(self) -> None:
-    #     """TODO: log these prints"""
-    #     if os.path.exists(self.matches_table_path):
-    #         print("Matches file provided; using it as is.")
-    #         return
-    #     print("No matches file provided.")
-    #     print("Automatic matches table generation in progress...")
-        
-    #     self.fill_overlap_columns_sql_DataFileInfo_field()
-
-    #     _create_empty_matches_table(
-    #         con=self.con,
-    #         matches_table_label=self.matches_table_label,
-    #     )
-    #     _insert_data_x_entities(
-    #         con=self.con,
-    #         data_x_table_label=self.tables["data_x"].label,
-    #         matches_table_label=self.matches_table_label,
-    #         entity_column_label=self.entity_column_label,
-    #     )
-    #     self.x_entities = _get_entities_from_table(
-    #         con=self.con,
-    #         table_label=self.tables["data_x"].label,
-    #         entity_column_label=self.entity_column_label,
-    #     )
-    #     self.merge_entities_into_matches_table()
-    #     _export_matches_excel(
-    #         con=self.con,
-    #         matches_table_label=self.matches_table_label,
-    #         output_path=self.matches_table_path,
-    #     )
+        _create_empty_matches_table(
+            con=self.con,
+            matches_table_label=self.matches_table_label,
+        )
+        _insert_data_x_entities(
+            con=self.con,
+            data_x_table_label=self.tables["data_x"].label,
+            matches_table_label=self.matches_table_label,
+            entity_column_label=self.entity_column_label,
+        )
+        self.x_entities = _get_entities_from_table(
+            con=self.con,
+            table_label=self.tables["data_x"].label,
+            entity_column_label=self.entity_column_label,
+        )
+        self.merge_entities_into_matches_table()
+        _export_matches_excel(
+            con=self.con,
+            matches_table_label=self.matches_table_label,
+            output_path=self.matches_table_path,
+        )
 
     def print_tables_info(self) -> None:
         for table in self.tables:

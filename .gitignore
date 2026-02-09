@@ -9,7 +9,12 @@ wheels/
 # Virtual environments
 .venv
 
+# polars tests
+polars_tests/
+
 # Specific files
 todo
 *matches.xlsx*
 *table.html
+*_debug.csv
+core_data.duckdb

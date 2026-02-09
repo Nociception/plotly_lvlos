@@ -90,3 +90,10 @@ class ConfigConstraintError(ErrorConfig):
         )
 
         super().__init__(message)
+
+
+# suffixes.py
+class SuffixesInvalidSchema(ErrorConfig):
+    """
+    Raised when a suffixes value violates declared constraints.
+    """

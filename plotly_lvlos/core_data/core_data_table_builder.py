@@ -1,63 +1,67 @@
 import duckdb
 
 from plotly_lvlos.core_data.DataFileInfo import DataFileInfo
+from plotly_lvlos.errors.errors_build_core_data import (
+    Data_xValuePositivenessFailure,
+)
 
-def _get_overlap_columns(
+
+def _build_data_x_long(
     con: duckdb.DuckDBPyConnection | None = None,
-    table_name: str = "",
-    overlap_start: int = -1,
-    overlap_end: int = -1,
-) -> list[str]:
-    info = con.execute(
-        f"PRAGMA table_info('{table_name}')"
-    ).fetchall()
+    entity_column_label: str = "",
+    overlap_column_label: str = "",
+    data_x_overlap_columns_sql: str = "",
+) -> None:
+    con.execute(f"""
+        CREATE TABLE data_x_long AS
+            SELECT
+                {entity_column_label},
+                CAST(col AS INTEGER) AS {overlap_column_label},
+                val AS data_x
+            FROM
+                data_x
+            UNPIVOT (
+                val FOR col IN ({data_x_overlap_columns_sql})
+            )
+    """)
 
-    overlap_columns: list[str] = []
 
-    for _, name, *_ in info:
-        try:
-            value = int(name)
-        except ValueError:
-            continue
-
-        if (
-            overlap_start
-            <= value
-            <= overlap_end
-        ):
-            overlap_columns.append(name)
-
-    if not overlap_columns:
-        raise ValueError(
-            f"No overlap columns found in table '{table_name}' "
-            f"for interval "
-            f"[{overlap_start} ; {overlap_end}]"
+def _check_strictly_positive_data_x_values(
+    con: duckdb.DuckDBPyConnection | None = None,
+) -> None:
+    invalid = con.execute("""
+        SELECT
+            COUNT(*)
+        FROM
+            data_x_long
+        WHERE
+            data_x <= 0
+    """).fetchone()[0]
+    if invalid > 0:
+        raise Data_xValuePositivenessFailure(
+            f"Invalid data_x values: {invalid} values <= 0. "
+            "Logarithmic scale requires strictly positive data."
         )
 
-    return overlap_columns
 
 def _build_core_data_table(
     con: duckdb.DuckDBPyConnection | None = None,
     entity_column_label: str = "",
     overlap_column_label: str = "",
-    tables: list[DataFileInfo] = [],
+    tables: dict[str, DataFileInfo] = [],
 ) -> None:
+
+    _build_data_x_long(
+        con=con,
+        entity_column_label=entity_column_label,
+        overlap_column_label=overlap_column_label,
+        data_x_overlap_columns_sql=tables["data_x"].overlap_columns_sql,
+    )
+    _check_strictly_positive_data_x_values(con=con)
 
     con.execute(f"""
         CREATE TABLE core_data AS
             WITH
-                data_x_long AS (
-                    SELECT
-                        {entity_column_label},
-                        CAST(col AS INTEGER) AS {overlap_column_label},
-                        val AS data_x
-                    FROM
-                        data_x
-                    UNPIVOT (
-                        val FOR col IN ({tables[0].overlap_columns_sql})
-                    )
-                ),
-
                 data_y_long AS (
                     SELECT
                         {entity_column_label},
@@ -66,7 +70,7 @@ def _build_core_data_table(
                     FROM
                         data_y
                     UNPIVOT (
-                        val FOR col IN ({tables[1].overlap_columns_sql})
+                        val FOR col IN ({tables['data_y'].overlap_columns_sql})
                     )
                 ),
 
@@ -78,7 +82,7 @@ def _build_core_data_table(
                     FROM
                         extra_data_point
                     UNPIVOT (
-                        val FOR col IN ({tables[2].overlap_columns_sql})
+                        val FOR col IN ({tables['extra_data_point'].overlap_columns_sql})
                     )
                 ),
 
@@ -90,7 +94,7 @@ def _build_core_data_table(
                     FROM
                         extra_data_x
                     UNPIVOT (
-                        val FOR col IN ({tables[3].overlap_columns_sql})
+                        val FOR col IN ({tables['extra_data_x'].overlap_columns_sql})
                     )
                 )
 
@@ -98,7 +102,7 @@ def _build_core_data_table(
                 dx.{entity_column_label} AS {entity_column_label},
                 dx.{overlap_column_label} AS {overlap_column_label},
                 dx.data_x AS data_x,
-                NULL AS data_x_log,
+                LOG10(dx.data_x) AS data_x_log,
                 dy.data_y AS data_y,
                 edp.extra_data_point AS extra_data_point,
                 edx.extra_data_x AS extra_data_x

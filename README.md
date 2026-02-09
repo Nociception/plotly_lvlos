@@ -1,180 +1,345 @@
-PLOTLY-LVLOS
+check where pandas is used
 
-Plotly-LVLOS is a Python project for generating interactive visualizations comparing linear and logarithmic x-scales on time series.
-This branch load_parse_config.toml focuses on loading and validating configuration.
+warning : yellow
 
-Table of contents:
 
-Installation
 
-Project structure
 
-Configuration
 
-Usage
 
-Validation and constraints
 
-Tests
 
-Future work
 
-CONFIGURATION
 
-The project relies on a config.toml file.
-The expected sections and keys are defined in CONFIG_TOML_DICT_SCHEMA.
 
-Example minimal config.toml:
 
-[project]
-name = "plotly-lvlos"
-description = "Animated comparison of linear vs logarithmic x-scale effects"
-output_dir = "build"
+Project overview — motivation, scope and current state
+General idea of the project
 
-[data]
-x_file = "data/x.csv"
-y_file = "data/y.csv"
-extra_data_point_file = "data/edpf.csv"
-extra_data_x_file = "data/edxf.csv"
-entity_column = "country"
-overlap_column = "year"
+This project explores how the choice of scale on one axis (linear vs logarithmic) fundamentally alters the interpretation of statistical relationships, using animated scatter plots over time.
 
-[analysis]
-min_points_per_year = 5
+The core question is deliberately simple, but often underestimated:
 
-[visualization]
-width = 1200
-height = 800
-frame_duration_ms = 300
-transition_duration_ms = 0
+How much of what we “see” in a scatter plot is a property of the data — and how much is an artefact of the scale we chose?
 
-USAGE
+The project focuses on datasets such as:
 
-from plotly_lvlos.build import build
+GDP per capita
 
-build("config.toml")
+Life expectancy
 
-Current pipeline steps:
+Population
 
-Load the TOML file (load_config)
+Inequality indicators (e.g. Gini coefficient)
 
-Validate sections, keys and values (parse_config_toml_dict, validate_config_values)
+These variables typically span several orders of magnitude. On a linear scale, most of the structure is visually compressed; on a logarithmic scale, different patterns emerge, correlations shift, and trends become legible in a different way.
 
-Check existence of required files (validate_files_exist)
+The goal is therefore not merely to display two static plots, but to:
 
-Future steps: data loading and HTML generation using Plotly.
+animate the data over time,
 
-VALIDATION AND CONSTRAINTS
+compute and display analytical metrics per year,
 
-Types, string lengths, and numeric bounds are checked using CONFIG_TOML_DICT_SCHEMA_CONSTRAINTS.
+and allow a direct visual comparison between linear-scale and log-scale interpretations of the same underlying data.
 
-Mandatory files must exist, optional files raise a warning if missing.
+Relation to the original project
 
-Violations raise specific exceptions:
+In its original form, the project required users to:
 
-ConfigConstraintError
+clone the repository,
 
-ConfigFileNotFoundFatalError
+install dependencies,
 
-ConfigFileNotFoundWarning
+create a virtual environment,
 
-TESTS
+and run Python scripts locally.
 
-Uses pytest, covering:
+The codebase was exploratory rather than architectural:
 
-Required sections and keys
+data validation and schema enforcement were minimal,
 
-String constraints (len_min, len_max, strip)
+entity alignment logic was implicit and fragile,
 
-Numeric constraints (min, max)
+missing or mismatched data was often silently dropped,
 
-File existence
+intermediate artefacts were not clearly defined or reusable.
 
-Run tests:
+As a result, despite the relevance of the underlying idea, the project was poorly suited for portfolio use or for review by non-technical audiences.
 
-pytest tests --disable-warnings -v
+Objectives of the refactor
 
-FUTURE WORK
+The refactored project explicitly addresses those limitations.
 
-Load and merge CSV data files
+Its goals are to:
 
-Generate interactive Plotly HTML output from data
+Produce a fully static output
 
-Optionally add filtering and animation features
+a single HTML file,
 
+no runtime backend,
 
+no Python execution required to view the result,
 
+directly openable in a browser.
 
+Use Plotly for interactive and animated visualizations
 
+smooth animations over time,
 
+hover metadata,
 
+dual linear / logarithmic representations,
 
+explicit annotation of analytical metrics.
 
+Treat data engineering as a first-class concern
 
+strict schema validation,
 
+explicit error and warning semantics,
 
+deterministic handling of missing or misaligned data,
 
+reproducible and inspectable intermediate artefacts.
 
+Make the project readable and auditable
 
+clear separation of pipeline phases,
 
+explicit contracts between steps,
 
+configuration-driven behaviour,
 
+no hidden assumptions or “magic” joins.
 
+The intended result is a project that is:
 
+easy to run once,
 
-# Choice : so far, handle only csv input datafiles
+easy to inspect,
 
+easy to share,
 
-# Why a materialized core table?
+and easy to reason about.
 
-This project relies on a materialized core table as the primary analytical dataset used to generate Plotly animation frames.
+High-level pipeline overview
 
-This is a deliberate design choice, not a technical limitation.
+The project is structured as a multi-phase data pipeline.
+Each phase produces explicit artefacts and enforces strict invariants.
 
-Alternative approach: dynamic joins
+Phase 0 — Configuration validation
 
-An alternative design would consist in keeping each dataset (GDP, life expectancy, population, inequality, etc.) in separate normalized tables and generating each animation frame through SQL joins based on a shared entity_id and year.
+A strict config.toml file defines:
 
-This approach is perfectly viable and would typically involve:
+project metadata,
 
-a canonical entities table produced after fuzzy matching,
+data sources,
 
-one table per source dataset in long format,
+analytical parameters,
 
-per-year SQL queries joining the relevant tables to assemble frame data on demand.
+visualization parameters.
 
-Why this approach was not retained
+The configuration is validated against:
 
-While technically correct, this fully normalized approach was intentionally not selected for the following reasons:
+a closed declarative schema,
 
-Analytical clarity
-A single long-form core table provides an explicit, self-contained analytical dataset where all relevant variables are immediately visible and interpretable.
+type constraints,
 
-Explorability
-The core table can be reused directly for ad-hoc analysis, validation, or alternative visualizations without re-running joins or relying on pipeline-specific logic.
+value bounds,
 
-Deterministic build pipeline
-All joins, alignments, transformations (including derived features such as log_gdp) are resolved once at build time, producing a stable and reproducible dataset.
+file existence rules (mandatory vs optional datasets).
 
-Separation of concerns
-The visualization layer operates on precomputed frames derived from the core table, while data integration complexity remains isolated in earlier pipeline stages.
+No data is read at this stage.
+Only structure, constraints and internal consistency are validated.
 
-Project intent
-As a showcase project, the objective is not only to demonstrate the ability to perform joins and normalization, but also to justify architectural choices based on downstream usage and maintainability.
+Phase 1 — Unified core data construction (entity resolution & alignment)
 
-Scope and implications
+This phase is the conceptual and technical core of the project.
 
-The core table is not intended to model a transactional or normalized production system.
-It is a materialized analytical artifact, designed to:
+Objective
 
-support efficient frame generation,
+Build a single canonical analytical table that integrates all datasets — mandatory and optional — in one pass.
 
-simplify reasoning about temporal data completeness,
+There is no longer a notion of “core” versus “enriched” data.
+All datasets participate equally in the construction of the analytical table.
 
-and remain reusable for further exploratory analysis if the project is extended.
+Role of the matches table
 
-This choice reflects a common data engineering trade-off: preferring a denormalized analytical dataset when it improves clarity, reusability, and downstream simplicity without introducing meaningful cost or ambiguity.
+The matches table is the central alignment contract of the pipeline.
 
+It defines, for each logical entity:
 
-# why a public repo during dev
-because rule set is not effective with a free plan on a private repo
+the reference entity label in data_x,
+
+the corresponding entity labels in other datasets (or their absence),
+
+the nature of each match (exact, fuzzy, unmatched),
+
+an associated confidence score.
+
+Unmatched entities are explicitly represented, rather than silently discarded.
+
+This ensures that:
+
+entity resolution is auditable and user-editable,
+
+fuzzy matching is never irreversible,
+
+missing or ambiguous entities are visible as data, not hidden control flow.
+
+Construction logic
+
+The unified construction phase performs the following steps:
+
+Load and validate all input tables
+
+Mandatory and optional datasets are treated uniformly.
+
+Structural validation is applied consistently.
+
+Tables failing validation are excluded if optional, or raise blocking errors if mandatory.
+
+Resolve the entity space
+
+data_x defines the reference entity axis.
+
+Other datasets are aligned to it using the matches table.
+
+Orphan entities are preserved explicitly as unmatched rows.
+
+Resolve the temporal / numerical axis
+
+Overlapping columns (typically years) are detected per table.
+
+Tables may have different coverage; only the valid overlap is considered.
+
+Wide tables are normalized into a long (entity_id, year) representation using SQL UNPIVOT.
+
+Materialize the analytical table
+
+All datasets are merged into a single long-format table.
+
+Each row represents one (entity_id, year) pair.
+
+Values from different datasets may be null independently.
+
+Output artefact
+
+The result of Phase 1 is a single canonical table, persisted as a parquet file:
+
+entity_id | year | x_value | y_value | extra_data_point | extra_data_x
+
+
+Key invariants:
+
+No row is dropped due to partial missing data.
+
+Optional datasets never invalidate the table.
+
+Missing values are explicit and traceable.
+
+Entity mismatches are handled upstream via the matches table, not hidden downstream.
+
+This table is the only input for all subsequent analytical and visualization phases.
+
+At the current stage of the project, this phase is essentially complete.
+
+Error and warning semantics
+
+Structural violations or invalid values in mandatory datasets produce blocking errors.
+
+Issues in optional datasets (missing entities, missing years) produce warnings.
+
+Entity resolution issues are diagnosed at the matches table level, not during merging.
+
+Failures are therefore:
+
+early,
+
+localized,
+
+explicit,
+
+and explainable.
+
+Conceptual simplification
+
+This unified approach removes several ambiguities present in the earlier design:
+
+Before	Now
+Core vs enriched tables	Single canonical table
+Implicit entity joins	Explicit matches table
+Silent data loss	Explicit unmatched rows
+Dataset-specific logic	Uniform integration
+
+As a result, the pipeline is simpler to reason about, easier to debug, and more robust to future extensions.
+
+Phase 2 — Analytical transformations
+
+Rows with missing x_value or y_value are excluded from analysis.
+
+Logarithmic transformation of x_value is computed.
+
+Zero or negative values trigger blocking errors.
+
+Per-year analytical metrics are computed once:
+
+regression coefficients,
+
+correlations,
+
+dispersion metrics.
+
+Years with insufficient data emit warnings and produce null metrics.
+
+Phase 3 — Frame materialization
+
+Metric tables are materialized explicitly.
+
+Plotly animation frames (linear and logarithmic) are precomputed.
+
+No computation occurs at visualization time.
+
+Phase 4 — Final Plotly figure assembly
+
+All frames are assembled into a single Plotly figure.
+
+Layout, animation, annotations and interactions are configured.
+
+The final output is exported as a fully static HTML file.
+
+Current implementation status & working methodology
+
+Already implemented
+
+Strict, declarative config.toml schema.
+
+Full configuration parsing and validation.
+
+Explicit constraint handling.
+
+File existence checks.
+
+Construction of entity matching tables.
+
+Unified core data construction using SQL and UNPIVOT.
+
+Not yet implemented
+
+Full analytical metric computation.
+
+Final Plotly animation assembly.
+
+Development follows a deliberately disciplined approach:
+
+test-driven development using pytest,
+
+incremental implementation with explicit failure modes,
+
+strict separation between validation, transformation and visualization,
+
+CI with formatting, linting and tests,
+
+protected main branch with PR-based merging, even as a solo developer.
+
+The emphasis is on correctness, explicitness and auditability rather than speed or cleverness.

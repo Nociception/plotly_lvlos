@@ -8,20 +8,12 @@ TEST_DIR = tests
 
 build:
 
-	@if [ -f table.html ]; then \
-		rm table.html; \
-	fi
-
-	@if [ -f matches.csv ]; then \
-		echo CAREFUL ! matches.csv is rm each time make is called ! Rm the rm before final push; \
-		rm matches.csv; \
+	@if [ -f core_data.duckdb ]; then \
+		rm core_data.duckdb; \
 	fi
 
 	@echo " Building project..."
-	@if [ ! -f $(CONFIG) ]; then \
-		echo "Config file $(CONFIG) not found!"; \
-		exit 1; \
-	fi
+
 	$(PYTHON) $(BUILD_SCRIPT)
 	@echo "Build complete."
 

@@ -37,3 +37,8 @@ class EntityUniquenessFailure(TableValidationFailure):
 class OverlapColumnsFailure(TableValidationFailure):
     def __init__(self, failure_text: str):
         super().__init__(failure_text)
+
+
+class Data_xValuePositivenessFailure(TableValidationFailure):
+    def __init__(self, failure_text: str):
+        super().__init__(failure_text)

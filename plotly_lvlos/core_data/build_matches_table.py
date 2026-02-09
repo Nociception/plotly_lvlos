@@ -4,6 +4,8 @@ import pandas as pd
 import duckdb
 import polars as pl
 import pyarrow as pa
+from rapidfuzz import fuzz, process
+
 
 from plotly_lvlos.core_data.DataFileInfo import DataFileInfo
 from plotly_lvlos.errors.errors_build_core_data import FileReadFailure
@@ -27,8 +29,11 @@ def _create_empty_matches_table(
     matches_table_label: str = ""
 ) -> None:
 
-    con.execute(
-        f"""
+    con.execute(f"""
+        DROP TABLE IF EXISTS {matches_table_label}
+    """)
+
+    con.execute(f"""
         CREATE TABLE {matches_table_label} (
             data_x VARCHAR,
             data_y VARCHAR,
@@ -41,8 +46,7 @@ def _create_empty_matches_table(
             extra_data_x_match_type VARCHAR,
             extra_data_x_confidence DOUBLE
         )
-        """
-    )
+    """)
 
 
 def _insert_data_x_entities(
@@ -164,7 +168,6 @@ def _load_matches_file(
     matches_file_path: str = "config/matches.xlsx",
     matches_table_label: str = "matches",
 ) -> None:
-
     matches_file = Path(matches_file_path)
 
     try:
@@ -201,3 +204,61 @@ def _load_matches_file(
             ),
             original_exception=e,
         ) from e
+
+
+def _fuzz_match_entities(
+    con: duckdb.DuckDBPyConnection | None = None,
+    table: DataFileInfo | None = None,
+    entity_column_label: str = "",
+    matches_table_label: str = "",
+    x_entities: list[str] | None = None,
+):
+    match_threshold: int = 90
+    table_entities = _get_entities_from_table(
+        con=con,
+        table_label=table.label,
+        entity_column_label=entity_column_label
+    )
+    matches = []
+    for table_entity in table_entities:
+        best_match_in_x, score, _ = process.extractOne(
+            table_entity,
+            x_entities,
+            scorer=fuzz.WRatio
+        )
+        if score >= 100:
+            matches.append((table_entity, best_match_in_x, "exact", 1.0))
+        elif score >= match_threshold:
+            matches.append((table_entity, best_match_in_x, "fuzzy", score / 100.0))
+        else:
+            matches.append((table_entity, None, "unmatched", 0.0))
+    
+    for table_entity, x_match, match_type, confidence in matches:
+        if x_match is not None:
+            con.execute(f"""
+                UPDATE
+                    {matches_table_label}
+                SET
+                    {table.label} = ?, {table.label}_match_type = ?, {table.label}_confidence = ?
+                WHERE
+                    data_x = ?
+                """,
+                (table_entity, match_type, confidence, x_match)
+            )
+        else:
+            con.execute(f"""
+                INSERT INTO {matches_table_label} (
+                    data_x,
+                    {table.label},
+                    {table.label}_match_type,
+                    {table.label}_confidence
+                )
+                VALUES (?, ?, ?, ?)
+                """,
+                (
+                    None,
+                    table_entity,
+                    "unmatched",
+                    0.0,
+                ),
+            )

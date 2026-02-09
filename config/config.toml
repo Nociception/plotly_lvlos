@@ -1,9 +1,42 @@
+# ============================================================================
+# Main configuration file — plotly-lvlos
+#
+# This file defines:
+# - project metadata
+# - data sources and structural assumptions
+# - analysis constraints
+# - visualization parameters
+#
+# It is strictly validated against CONFIG_TOML_DICT_SCHEMA:
+# - no missing sections
+# - no extra sections
+# - no missing keys
+# - no extra keys
+#
+# Any extension of behavior must be done via:
+# - additional files (e.g. *_suffixes.toml, matches.csv)
+# - or explicit schema evolution
+# ============================================================================
+
+
 [project]
 name = "plotly-lvlos"
 description = "Animated comparison of linear vs logarithmic x-scale effects"
 output_dir = "build"
 
 [data]
+# ---------------------------------------------------------------------------
+# Data sources and structural conventions
+#
+# Each *_file points to a CSV file.
+# Each *_file_profile defines how the file should be interpreted / cleaned.
+#
+# Numeric values may be stored as strings with suffixes (e.g. "2.5M").
+# Suffix interpretation is NOT defined here:
+# - default behavior comes from config/default_suffixes.toml
+# - source-specific overrides may be provided via data_*_suffixes.toml
+# ---------------------------------------------------------------------------
+
 x_file = "data/gdppercapita_ppp_inflation_adjusted.csv"
 x_file_profile = "clean"
 
@@ -16,8 +49,13 @@ extra_data_point_file_profile = "clean"
 extra_data_x_file = "data/Gini_coefficient.csv"
 extra_data_x_file_profile = "dusty"
 
+# Column identifying entities shared across all datasets (e.g. country name)
 entity_column = "country"
+
+# Column used to align datasets temporally
 overlap_column = "year"
+
+# Temporal bounds applied after alignment
 overlap_start = 1800
 overlap_end = 2050
 

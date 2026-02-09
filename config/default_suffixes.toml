@@ -1,0 +1,27 @@
+# ============================================================================
+# Default numeric suffixes (SI system)
+#
+# This file defines how numeric suffixes are interpreted when parsing
+# string-based numeric values (e.g. "2.5M", "10k", "3G").
+#
+# These rules apply globally unless overridden by a source-specific
+# *_suffixes.toml file (e.g. data_x_suffixes.toml).
+# ============================================================================
+
+
+[suffixes]
+Y = 1_000_000_000_000_000_000_000_000   # yotta
+Z = 1_000_000_000_000_000_000_000       # zetta
+E = 1_000_000_000_000_000_000           # exa
+P = 1_000_000_000_000_000               # peta
+T = 1_000_000_000_000                   # tera
+G = 1_000_000_000                       # giga
+M = 1_000_000                           # mega
+k = 1_000                               # kilo
+
+m = 0.001                               # milli
+u = 0.000001                            # micro
+n = 0.000000001                         # nano
+p = 0.000000000001                      # pico
+f = 0.000000000000001                   # femto
+a = 0.000000000000000001                # atto

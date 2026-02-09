@@ -6,6 +6,7 @@ from plotly_lvlos.core_data.csv_profiles import CSV_PROFILES
 from plotly_lvlos.errors.errors_build_core_data import (
     EntityColumnFailure,
     EntityUniquenessFailure,
+    Data_xValuePositivenessFailure,
 )
 
 
@@ -74,7 +75,7 @@ def _convert_according_to_suffixes(table: DataFileInfo, default_suffixes: dict[s
     table.df = table.df.with_columns([
         (
             pl.col(col).cast(pl.Utf8)
-            .str.extract(r"([0-9]+(?:\.[0-9]+)?)", 1)
+            .str.extract(r"(-?[0-9]+(?:\.[0-9]+)?)", 1)
             .cast(pl.Float64)
             *
             pl.col(col).str.extract(r"([A-Za-zµ]+)$", 1)

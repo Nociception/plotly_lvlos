@@ -1,3 +1,18 @@
+check where pandas is used
+
+warning : yellow
+
+
+
+
+
+
+
+
+
+
+
+
 Project overview — motivation, scope and current state
 General idea of the project
 

@@ -1,8 +1,6 @@
 import duckdb
 import os.path
 
-import polars as pl
-
 from plotly_lvlos.core_data.all_tables_decorator import (
     all_tables_decorator
 )
@@ -32,11 +30,6 @@ from plotly_lvlos.core_data.build_matches_table import (
 )
 from plotly_lvlos.core_data.core_data_table_builder import (
     _build_core_data_table,
-)
-from plotly_lvlos.errors.errors_build_core_data import (
-    FileReadFailure,
-    EntityColumnFailure,
-    EntityUniquenessFailure,
 )
 
 
@@ -75,29 +68,12 @@ class CoreDataBuilder:
             matches_file_path=self.matches_table_path,
             matches_table_label=self.matches_table_label,
         )
-
-
-
-        # _build_core_data_table(
-        #     con=self.con,
-        #     entity_column_label=self.entity_column_label,
-        #     overlap_column_label=self.overlap_column_label,
-        #     tables=self.tables,
-        # )
-
-
-
-        # print(self.con.execute("SHOW TABLES").fetchall())
-        # print("######")
-        # df = self.con.execute(
-        #     "SELECT * FROM core_data"
-        # ).df()
-        # print(df.head())
-        # df.to_html("table.html", index=False)
-        # # print(self.con.execute("DESCRIBE data_x").fetchall())
-        # print("######")
-        # self.print_tables_info()
-        # print(self.config_dict)
+        _build_core_data_table(
+            con=self.con,
+            entity_column_label=self.entity_column_label,
+            overlap_column_label=self.overlap_column_label,
+            tables=self.tables,
+        )
 
     @all_tables_decorator
     def extract_parse_transform_load(self, table: DataFileInfo):

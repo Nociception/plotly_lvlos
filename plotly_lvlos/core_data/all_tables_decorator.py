@@ -7,6 +7,7 @@ from plotly_lvlos.errors.errors_build_core_data import (
     EntityColumnFailure,
     EntityUniquenessFailure,
     OverlapColumnsFailure,
+    Data_xValuePositivenessFailure,
 )
 
 
@@ -27,6 +28,7 @@ def all_tables_decorator(func):
                 EntityColumnFailure,
                 EntityUniquenessFailure,
                 OverlapColumnsFailure,
+                Data_xValuePositivenessFailure,
             ) as e:
                 table.status = False
                 if table.mandatory:

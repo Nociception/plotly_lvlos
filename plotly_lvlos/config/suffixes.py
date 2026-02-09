@@ -32,36 +32,6 @@ def _parse_suffixes_toml(suffixes_dict: dict, file_path: Path) -> None:
             f"Suffixes {non_numeric} have non-numeric values in {file_path.resolve()}"
         )
 
-    if "options" not in suffixes_dict:
-        raise SuffixesInvalidSchema(
-            f"Missing required [options] section in {file_path.resolve()}"
-        )
-
-    options = suffixes_dict["options"]
-
-    if not isinstance(options, dict):
-        raise SuffixesInvalidSchema(
-            f"[options] section must be a table in {file_path.resolve()}"
-        )
-
-    required_options = {"case_sensitive", "allow_unicode_micro"}
-    missing_options = required_options - options.keys()
-
-    if missing_options:
-        raise SuffixesInvalidSchema(
-            f"Missing options {sorted(missing_options)} in [options] section of {file_path.resolve()}"
-        )
-
-    non_bool_options = [
-        key for key in required_options
-        if not isinstance(options[key], bool)
-    ]
-
-    if non_bool_options:
-        raise SuffixesInvalidSchema(
-            f"Options {non_bool_options} must be boolean in {file_path.resolve()}"
-        )
-
 
 def load_suffixes_toml(toml_dict: dict) -> None:
 
@@ -71,12 +41,13 @@ def load_suffixes_toml(toml_dict: dict) -> None:
             f"Default suffixes TOML file not found: {default_suffixes_path.resolve()}"
         )
 
-    def _load_one_suffixes_file(path: Path) -> dict:
+    def _load_one_suffixes_file(path: Path) -> dict[str, dict[str, float]]:
         try:
             with path.open("rb") as f:
-                return tomllib.load(f)
+                return {"suffixes": {k: float(v) for k, v in tomllib.load(f)["suffixes"].items()}}
         except tomllib.TOMLDecodeError as exc:
             raise ConfigFileInvalid(f"Invalid suffixes TOML file: {path.resolve()}") from exc
+
 
     default_loaded = _load_one_suffixes_file(default_suffixes_path)
     _parse_suffixes_toml(default_loaded, default_suffixes_path)

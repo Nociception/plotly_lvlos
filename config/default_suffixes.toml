@@ -25,29 +25,3 @@ n = 0.000000001                         # nano
 p = 0.000000000001                      # pico
 f = 0.000000000000001                   # femto
 a = 0.000000000000000001                # atto
-
-
-[options]
-case_sensitive = false
-# ---------------------------------------------------------------------------
-# Case sensitivity rules
-#
-# - If false:
-#   - suffix matching is case-insensitive
-#   - all suffixes are normalized internally
-#
-# - If true:
-#   - suffix matching is case-sensitive
-#   - "m" (milli) and "M" (mega) are distinct
-# ---------------------------------------------------------------------------
-
-allow_unicode_micro = true
-# ---------------------------------------------------------------------------
-# Allow Unicode micro sign (µ)
-#
-# If true:
-# - "µ" is accepted and normalized to "u"
-#
-# If false:
-# - only ASCII "u" is allowed
-# ---------------------------------------------------------------------------

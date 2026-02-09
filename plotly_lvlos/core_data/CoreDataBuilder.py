@@ -96,7 +96,7 @@ class CoreDataBuilder:
         # df.to_html("table.html", index=False)
         # # print(self.con.execute("DESCRIBE data_x").fetchall())
         # print("######")
-        self.print_tables_info()
+        # self.print_tables_info()
         # print(self.config_dict)
 
     @all_tables_decorator
@@ -121,20 +121,17 @@ class CoreDataBuilder:
             overlap_end=self.config_data["overlap_end"],
         )
         _fill_overlap_columns_sql_DataFileInfo_field(table=table)
+        _convert_according_to_suffixes(
+            table=table,
+            default_suffixes=self.config_dict["suffixes"]["default"],
+        )
 
 
 
-        # _convert_according_to_suffixes(
-        #     table=table,
-        #     default_suffixes=self.config_dict["suffixes"]["default"],
-        # )
-
-
-
-        print("################")
-        table.df.write_csv(f"{table.label}_debug.csv")
-        print(table.df.describe())
-        print("################")
+        # print("################")
+        # table.df.write_csv(f"{table.label}_debug.csv")
+        # print(table.df.describe())
+        # print("################")
 
         # load into duckdb
 

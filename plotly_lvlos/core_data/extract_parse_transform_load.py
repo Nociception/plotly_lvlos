@@ -66,89 +66,20 @@ def _validate_first_column_entities_uniqueness(
         )
 
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-def _build_suffix_multiplier_expr(
-    col: pl.Expr,
-    suffixes: dict[str, float],
-) -> pl.Expr:
-    """
-    Given a string column expression, extract suffix and apply multiplier.
-    """
-    # extract numeric part
-    number = col.str.extract(r"^([+-]?\d*\.?\d+)", 1).cast(pl.Float64)
-
-    # extract suffix (letters or µ)
-    suffix = col.str.extract(r"([a-zA-Zµ]+)$", 1)
-
-    # default multiplier = 1
-    multiplier = pl.lit(1.0)
-
-    for suf, factor in suffixes.items():
-        multiplier = pl.when(suffix == suf).then(factor).otherwise(multiplier)
-
-    return number * multiplier
-
-
-
-
-def _convert_according_to_suffixes(
-    table: DataFileInfo,
-    default_suffixes: dict[str, float],
-) -> None:
-
-    df = table.df
-    options = table.suffixes.get("options", {}) if table.suffixes else {}
-
-    case_sensitive = options.get("case_sensitive", False)
-    allow_unicode_micro = options.get("allow_unicode_micro", True)
-
-    suffixes = default_suffixes.copy()
-
-    # normalize suffix keys
-    if not case_sensitive:
-        suffixes = {k.lower(): v for k, v in suffixes.items()}
-
-    if allow_unicode_micro and "u" in suffixes:
-        suffixes["µ"] = suffixes["u"]
-
-    # columns to convert = all except entity column
-    entity_col = df.columns[0]
-    value_columns = df.columns[1:]
-
-    new_columns = []
-
-    for col_name in value_columns:
-        col = pl.col(col_name)
-
-        expr = col
-
-        if not case_sensitive:
-            expr = expr.str.to_lowercase()
-
-        expr = _build_suffix_multiplier_expr(
-            col=expr,
-            suffixes=suffixes,
-        )
-
-        new_columns.append(expr.alias(col_name))
-
-    table.df = df.with_columns(new_columns)
+def _convert_according_to_suffixes(table: DataFileInfo, default_suffixes: dict[str, float]) -> None:
+    suffixes_dict = table.suffixes if table.suffixes else default_suffixes
+    suffixes_dict = suffixes_dict["suffixes"]
+    num_cols = table.overlap_columns
+    table.df = table.df.with_columns([
+        (
+            pl.col(col).cast(pl.Utf8)
+            .str.extract(r"([0-9]+(?:\.[0-9]+)?)", 1)
+            .cast(pl.Float64)
+            *
+            pl.col(col).str.extract(r"([A-Za-zµ]+)$", 1)
+            .replace(suffixes_dict)
+            .cast(pl.Float64)
+            .fill_null(1.0)
+        ).alias(col)
+        for col in num_cols
+    ])

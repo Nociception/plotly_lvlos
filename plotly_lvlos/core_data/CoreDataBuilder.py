@@ -13,7 +13,7 @@ from plotly_lvlos.core_data.extract_parse_transform_load import (
 )
 from plotly_lvlos.core_data.DataFileInfo import (
     DataFileInfo,
-    create_DataFileInfo_objects,
+    _create_DataFileInfo_objects,
 )
 from plotly_lvlos.core_data.overlap_columns import (
     _validate_overlap_columns,
@@ -60,7 +60,7 @@ class CoreDataBuilder:
         duckdb.DuckDBPyRelation,
         duckdb.DuckDBPyRelation,
     ]:
-        self.tables = create_DataFileInfo_objects(self.config_dict)
+        self.tables = _create_DataFileInfo_objects(self.config_dict)
         self.extract_parse_transform_load()
         self.build_matches_table()
         _load_matches_file(
@@ -74,6 +74,11 @@ class CoreDataBuilder:
             overlap_column_label=self.overlap_column_label,
             tables=self.tables,
         )
+        self.con.execute("""
+            COPY core_data
+            TO 'core_data.csv'
+            WITH (HEADER TRUE, DELIMITER ',')
+        """)
 
     @all_tables_decorator
     def extract_parse_transform_load(self, table: DataFileInfo):

@@ -8,30 +8,8 @@ TEST_DIR = tests
 
 build:
 
-	@if [ -f data_x_debug.csv ]; then \
-		rm data_x_debug.csv; \
-	fi
-	@if [ -f data_x_debug.csv ]; then \
-		data_x_debug.csv; \
-	fi
-	@if [ -f extra_data_point.csv ]; then \
-		rm extra_data_point.csv; \
-	fi
-	@if [ -f extra_data_x.csv ]; then \
-		rm extra_data_x.csv; \
-	fi
-
-	@if [ -f table.html ]; then \
-		rm table.html; \
-	fi
-
 	@if [ -f core_data.duckdb ]; then \
 		rm core_data.duckdb; \
-	fi
-
-	@if [ -f matches.csv ]; then \
-		echo CAREFUL ! matches.csv is rm each time make is called ! Rm the rm before final push; \
-		rm matches.csv; \
 	fi
 
 	@echo " Building project..."

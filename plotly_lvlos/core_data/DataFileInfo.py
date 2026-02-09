@@ -17,7 +17,7 @@ class DataFileInfo:
     status: bool = True
 
 
-def create_DataFileInfo_objects(config_dict: dict) -> dict[str, DataFileInfo]:
+def _create_DataFileInfo_objects(config_dict: dict) -> dict[str, DataFileInfo]:
 
     config_data = config_dict["data"]
     suffixes_dict = config_dict["suffixes"]

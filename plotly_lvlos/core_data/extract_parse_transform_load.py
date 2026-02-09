@@ -6,7 +6,6 @@ from plotly_lvlos.core_data.csv_profiles import CSV_PROFILES
 from plotly_lvlos.errors.errors_build_core_data import (
     EntityColumnFailure,
     EntityUniquenessFailure,
-    Data_xValuePositivenessFailure,
 )
 
 

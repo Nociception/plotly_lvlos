@@ -37,10 +37,7 @@ def all_tables_decorator(func):
                     e.warn()
 
             except pl.exceptions.PolarsError as e:
-                failure = FileReadFailure(
-                    table=table,
-                     original_exception=e
-                )
+                failure = FileReadFailure(table=table, original_exception=e)
                 table.status = False
                 if table.mandatory:
                     raise failure

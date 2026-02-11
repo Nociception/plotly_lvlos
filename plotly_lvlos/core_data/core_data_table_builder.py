@@ -50,7 +50,6 @@ def _build_core_data_table(
     overlap_column_label: str = "",
     tables: dict[str, DataFileInfo] = [],
 ) -> None:
-
     _build_data_x_long(
         con=con,
         entity_column_label=entity_column_label,
@@ -70,7 +69,7 @@ def _build_core_data_table(
                     FROM
                         data_y
                     UNPIVOT (
-                        val FOR col IN ({tables['data_y'].overlap_columns_sql})
+                        val FOR col IN ({tables["data_y"].overlap_columns_sql})
                     )
                 ),
 
@@ -82,7 +81,7 @@ def _build_core_data_table(
                     FROM
                         extra_data_point
                     UNPIVOT (
-                        val FOR col IN ({tables['extra_data_point'].overlap_columns_sql})
+                        val FOR col IN ({tables["extra_data_point"].overlap_columns_sql})
                     )
                 ),
 
@@ -94,7 +93,7 @@ def _build_core_data_table(
                     FROM
                         extra_data_x
                     UNPIVOT (
-                        val FOR col IN ({tables['extra_data_x'].overlap_columns_sql})
+                        val FOR col IN ({tables["extra_data_x"].overlap_columns_sql})
                     )
                 )
 

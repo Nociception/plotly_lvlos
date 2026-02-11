@@ -24,11 +24,10 @@ EXPECTED_COLUMNS = [
     "extra_data_x_confidence",
 ]
 
-def _create_empty_matches_table(
-    con: duckdb.DuckDBPyConnection | None = None,
-    matches_table_label: str = ""
-) -> None:
 
+def _create_empty_matches_table(
+    con: duckdb.DuckDBPyConnection | None = None, matches_table_label: str = ""
+) -> None:
     con.execute(f"""
         DROP TABLE IF EXISTS {matches_table_label}
     """)
@@ -55,7 +54,6 @@ def _insert_data_x_entities(
     matches_table_label: str = "",
     entity_column_label: str = "",
 ) -> None:
-    
     con.execute(
         f"""
         INSERT INTO
@@ -74,7 +72,8 @@ def _get_entities_from_table(
     entity_column_label: str = "",
 ) -> list:
     return [
-        entity[0] for entity in con.execute(f"""
+        entity[0]
+        for entity in con.execute(f"""
             SELECT
                 {entity_column_label}
             FROM
@@ -106,24 +105,25 @@ def _write_matches_excel(
         unmatched_ws.freeze_panes(1, 0)
 
         confidence_cols = [
-            i for i, col in enumerate(df_unmatched.columns)
+            i
+            for i, col in enumerate(df_unmatched.columns)
             if col.endswith("_confidence")
         ]
 
         if confidence_cols:
             unmatched_ws.autofilter(
-                0, 0,
+                0,
+                0,
                 len(df_unmatched),
                 len(df_unmatched.columns) - 1,
             )
 
-        red_fmt = workbook.add_format(
-            {"bg_color": "#FFC7CE"}
-        )
+        red_fmt = workbook.add_format({"bg_color": "#FFC7CE"})
 
         for col_idx in confidence_cols:
             unmatched_ws.conditional_format(
-                1, col_idx,
+                1,
+                col_idx,
                 len(df_unmatched),
                 col_idx,
                 {
@@ -215,16 +215,12 @@ def _fuzz_match_entities(
 ):
     match_threshold: int = 90
     table_entities = _get_entities_from_table(
-        con=con,
-        table_label=table.label,
-        entity_column_label=entity_column_label
+        con=con, table_label=table.label, entity_column_label=entity_column_label
     )
     matches = []
     for table_entity in table_entities:
         best_match_in_x, score, _ = process.extractOne(
-            table_entity,
-            x_entities,
-            scorer=fuzz.WRatio
+            table_entity, x_entities, scorer=fuzz.WRatio
         )
         if score >= 100:
             matches.append((table_entity, best_match_in_x, "exact", 1.0))
@@ -232,10 +228,11 @@ def _fuzz_match_entities(
             matches.append((table_entity, best_match_in_x, "fuzzy", score / 100.0))
         else:
             matches.append((table_entity, None, "unmatched", 0.0))
-    
+
     for table_entity, x_match, match_type, confidence in matches:
         if x_match is not None:
-            con.execute(f"""
+            con.execute(
+                f"""
                 UPDATE
                     {matches_table_label}
                 SET
@@ -243,10 +240,11 @@ def _fuzz_match_entities(
                 WHERE
                     data_x = ?
                 """,
-                (table_entity, match_type, confidence, x_match)
+                (table_entity, match_type, confidence, x_match),
             )
         else:
-            con.execute(f"""
+            con.execute(
+                f"""
                 INSERT INTO {matches_table_label} (
                     data_x,
                     {table.label},

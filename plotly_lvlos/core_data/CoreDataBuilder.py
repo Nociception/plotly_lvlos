@@ -1,9 +1,7 @@
 import duckdb
 import os.path
 
-from plotly_lvlos.core_data.all_tables_decorator import (
-    all_tables_decorator
-)
+from plotly_lvlos.core_data.all_tables_decorator import all_tables_decorator
 from plotly_lvlos.core_data.extract_parse_transform_load import (
     _extract_as_all_varchar,
     _validate_entity_first_column_label,
@@ -36,7 +34,7 @@ from plotly_lvlos.core_data.core_data_table_builder import (
 class CoreDataBuilder:
     def __init__(
         self,
-        con : duckdb.DuckDBPyConnection | None,
+        con: duckdb.DuckDBPyConnection | None,
         config_dict: dict | None,
         core_data_table_label: str = "",
     ):
@@ -56,7 +54,9 @@ class CoreDataBuilder:
         self.x_entities: list[str] | None = None
         self.tables: dict[str, DataFileInfo] | None = None
 
-    def build(self) -> tuple[
+    def build(
+        self,
+    ) -> tuple[
         duckdb.DuckDBPyRelation,
         duckdb.DuckDBPyRelation,
     ]:
@@ -130,7 +130,7 @@ class CoreDataBuilder:
             return
         print("No matches file provided.")
         print("Automatic matches table generation in progress...")
-        
+
         _create_empty_matches_table(
             con=self.con,
             matches_table_label=self.matches_table_label,

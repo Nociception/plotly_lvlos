@@ -10,7 +10,6 @@ def _overlap_columns_present_in_table(
     overlap_start: str = "",
     overlap_end: str = "",
 ) -> None:
-
     if table.mandatory:
         if overlap_start not in columns:
             raise OverlapColumnsFailure(
@@ -25,8 +24,8 @@ def _overlap_columns_present_in_table(
             try:
                 int_column = int(column)
                 if int_column in [
-                    col for col in range(
-                        int(overlap_start), int(overlap_end) + 1)]:
+                    col for col in range(int(overlap_start), int(overlap_end) + 1)
+                ]:
                     return
             except ValueError:
                 continue
@@ -41,7 +40,6 @@ def _overlap_columns_indices_order(
     start_index: int = -1,
     end_index: int = -1,
 ) -> None:
-
     if start_index > end_index:
         raise OverlapColumnsFailure(
             f"In table '{table_label}', overlap_start occurs after overlap_end."
@@ -54,7 +52,6 @@ def _overlap_columns_contiguous_int(
     start_index: int = -1,
     end_index: int = -1,
 ) -> None:
-    
     overlap_columns = columns[start_index : end_index + 1]
     try:
         overlap_values = [int(col) for col in overlap_columns]
@@ -64,9 +61,7 @@ def _overlap_columns_contiguous_int(
             f"Columns: {overlap_columns}"
         ) from exc
 
-    expected_values = list(
-        range(overlap_values[0], overlap_values[-1] + 1)
-    )
+    expected_values = list(range(overlap_values[0], overlap_values[-1] + 1))
 
     if overlap_values != expected_values:
         raise OverlapColumnsFailure(
@@ -80,27 +75,27 @@ def _validate_overlap_columns(
     overlap_start: str | None = "",
     overlap_end: str | None = "",
 ) -> None:
-        columns = table.df.columns
-        _overlap_columns_present_in_table(
-            table=table,
-            columns=columns,
-            overlap_start=overlap_start,
-            overlap_end=overlap_end,
+    columns = table.df.columns
+    _overlap_columns_present_in_table(
+        table=table,
+        columns=columns,
+        overlap_start=overlap_start,
+        overlap_end=overlap_end,
+    )
+    if table.mandatory:
+        start_index = columns.index(overlap_start)
+        end_index = columns.index(overlap_end)
+        _overlap_columns_indices_order(
+            table_label=table.label,
+            start_index=start_index,
+            end_index=end_index,
         )
-        if table.mandatory:
-            start_index=columns.index(overlap_start)
-            end_index=columns.index(overlap_end)
-            _overlap_columns_indices_order(
-                table_label=table.label,
-                start_index=start_index,
-                end_index=end_index,
-            )
-            _overlap_columns_contiguous_int(
-                table_label=table.label,
-                columns=columns,
-                start_index=start_index,
-                end_index=end_index,
-            )
+        _overlap_columns_contiguous_int(
+            table_label=table.label,
+            columns=columns,
+            start_index=start_index,
+            end_index=end_index,
+        )
 
 
 def _fill_overlap_columns_DataFileInfo_field(
@@ -131,7 +126,4 @@ def _fill_overlap_columns_DataFileInfo_field(
 def _fill_overlap_columns_sql_DataFileInfo_field(
     table: DataFileInfo,
 ) -> None:
-
-    table.overlap_columns_sql = ", ".join(
-        f'"{col}"' for col in table.overlap_columns
-    )
+    table.overlap_columns_sql = ", ".join(f'"{col}"' for col in table.overlap_columns)

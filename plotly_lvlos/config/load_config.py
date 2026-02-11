@@ -15,10 +15,9 @@ from plotly_lvlos.errors.errors_config import (
 
 
 def load_config(config_path: Path | None = None) -> dict:
-    
     if not config_path.exists():
         raise ConfigFileNotFound(f"Config file not found: {config_path}")
-    
+
     try:
         with config_path.open("rb") as f:
             toml_dict = tomllib.load(f)

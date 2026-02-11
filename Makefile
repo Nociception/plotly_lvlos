@@ -1,4 +1,4 @@
-.PHONY: build test lint format clean ci
+.PHONY: build test ruff clean ci
 
 PYTHON = uv run python
 BUILD_SCRIPT = build.py
@@ -23,7 +23,8 @@ test:
 
 ruff:
 	@echo "Linting code with ruff..."
-	$(PYTHON) -m ruff check $(SRC_DIR) $(TEST_DIR)
+	$(PYTHON) -m ruff format $(SRC_DIR) $(TEST_DIR)
+	$(PYTHON) -m ruff check --fix $(SRC_DIR) $(TEST_DIR)
 
 clean:
 	@echo "Cleaning cache..."

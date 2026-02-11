@@ -1,6 +1,5 @@
 CSV_PROFILES: dict[str, dict] = {
-    "clean": {
-    },
+    "clean": {},
     "dusty": {
         "truncate_ragged_lines": True,
     },

@@ -9,7 +9,6 @@ from plotly_lvlos.errors.errors_config import (
 
 
 def _parse_suffixes_toml(suffixes_dict: dict, file_path: Path) -> None:
-
     if "suffixes" not in suffixes_dict:
         raise SuffixesInvalidSchema(
             f"Missing required [suffixes] section in {file_path.resolve()}"
@@ -23,8 +22,7 @@ def _parse_suffixes_toml(suffixes_dict: dict, file_path: Path) -> None:
         )
 
     non_numeric = [
-        key for key, value in suffixes.items()
-        if not isinstance(value, (int, float))
+        key for key, value in suffixes.items() if not isinstance(value, (int, float))
     ]
 
     if non_numeric:
@@ -34,7 +32,6 @@ def _parse_suffixes_toml(suffixes_dict: dict, file_path: Path) -> None:
 
 
 def load_suffixes_toml(toml_dict: dict) -> None:
-
     default_suffixes_path = Path("config/default_suffixes.toml")
     if not default_suffixes_path.exists():
         raise ConfigFileNotFound(
@@ -44,10 +41,15 @@ def load_suffixes_toml(toml_dict: dict) -> None:
     def _load_one_suffixes_file(path: Path) -> dict[str, dict[str, float]]:
         try:
             with path.open("rb") as f:
-                return {"suffixes": {k: float(v) for k, v in tomllib.load(f)["suffixes"].items()}}
+                return {
+                    "suffixes": {
+                        k: float(v) for k, v in tomllib.load(f)["suffixes"].items()
+                    }
+                }
         except tomllib.TOMLDecodeError as exc:
-            raise ConfigFileInvalid(f"Invalid suffixes TOML file: {path.resolve()}") from exc
-
+            raise ConfigFileInvalid(
+                f"Invalid suffixes TOML file: {path.resolve()}"
+            ) from exc
 
     default_loaded = _load_one_suffixes_file(default_suffixes_path)
     _parse_suffixes_toml(default_loaded, default_suffixes_path)

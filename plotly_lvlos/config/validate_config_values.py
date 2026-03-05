@@ -80,9 +80,7 @@ def validate_config_values(config_dict: dict) -> None:
                             section=section,
                             key=key,
                             value=value,
-                            constraints={
-                                "allowed_values": list(CSV_PROFILES.keys())
-                            },
+                            constraints={"allowed_values": list(CSV_PROFILES.keys())},
                         )
 
             elif expected_type is int:

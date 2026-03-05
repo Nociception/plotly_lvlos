@@ -5,7 +5,7 @@ from plotly_lvlos.errors.errors_build_core_data import (
 
 
 def _overlap_columns_present_in_table(
-    table: DataFileInfo | None = None,
+    table: DataFileInfo,
     columns: list = [],
     overlap_start: str = "",
     overlap_end: str = "",

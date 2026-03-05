@@ -56,10 +56,7 @@ class CoreDataBuilder:
         self.x_entities: list[str] | None = None
         self.tables: dict[str, DataFileInfo] | None = None
 
-    def build(self) -> tuple[
-        duckdb.DuckDBPyRelation,
-        duckdb.DuckDBPyRelation,
-    ]:
+    def build(self) -> None:
         self.tables = _create_DataFileInfo_objects(self.config_dict)
         self.extract_parse_transform_load()
         self.build_matches_table()

@@ -10,8 +10,7 @@ def _safe_sql_identifier(config_field: str) -> str:
     return safe
 
 
-def sanitize_config_sql_identifiers(config_dict: dict) -> str:
-
+def sanitize_config_sql_identifiers(config_dict: dict) -> None:
     for config_field in ["entity_column", "overlap_column"]:
         config_dict["data"][config_field] = _safe_sql_identifier(
             config_dict["data"][config_field]

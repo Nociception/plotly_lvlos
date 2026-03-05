@@ -9,7 +9,7 @@ from plotly_lvlos.errors.errors_build_core_data import (
 )
 
 
-def _extract_as_all_varchar(table: DataFileInfo) -> pl.DataFrame:
+def _extract_as_all_varchar(table: DataFileInfo) -> None:
     df = pl.read_csv(
         source=table.file,
         infer_schema_length=0,
@@ -20,7 +20,7 @@ def _extract_as_all_varchar(table: DataFileInfo) -> pl.DataFrame:
 
 
 def _validate_entity_first_column_label(
-    table: DataFileInfo | None = None,
+    table: DataFileInfo,
     entity_column_label: str = "",
 ) -> None:
 
@@ -87,8 +87,8 @@ def _convert_according_to_suffixes(table: DataFileInfo, default_suffixes: dict[s
 
 
 def _load_into_duckdb(
-    duckdb_conn: duckdb.DuckDBPyConnection | None = None,
-    table: DataFileInfo | None = None,
+    duckdb_conn: duckdb.DuckDBPyConnection,
+    table: DataFileInfo,
 ) -> None:
     duckdb_conn.execute(f"DROP TABLE IF EXISTS {table.label}")
     duckdb_conn.register("arrow_tmp", table.df.to_arrow())

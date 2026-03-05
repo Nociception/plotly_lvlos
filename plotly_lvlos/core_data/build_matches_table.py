@@ -208,7 +208,7 @@ def _load_matches_file(
 
 def _fuzz_match_entities(
     con: duckdb.DuckDBPyConnection,
-    table: DataFileInfo | None = None,
+    table: DataFileInfo,
     entity_column_label: str = "",
     matches_table_label: str = "",
     x_entities: list[str] | None = None,

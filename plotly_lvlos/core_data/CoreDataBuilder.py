@@ -36,7 +36,7 @@ from plotly_lvlos.core_data.core_data_table_builder import (
 class CoreDataBuilder:
     def __init__(
         self,
-        con : duckdb.DuckDBPyConnection | None,
+        con : duckdb.DuckDBPyConnection,
         config_dict: dict | None,
         core_data_table_label: str = "",
     ):

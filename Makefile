@@ -2,7 +2,6 @@
 
 PYTHON = uv run python
 BUILD_SCRIPT = build.py
-CONFIG = config/config.toml
 SRC_DIR = plotly_lvlos
 TEST_DIR = tests
 

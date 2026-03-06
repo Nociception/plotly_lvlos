@@ -1,11 +1,12 @@
 from plotly_lvlos.core_data.DataFileInfo import DataFileInfo
 from plotly_lvlos.errors.errors_build_core_data import (
     OverlapColumnsFailure,
+    TableValidationFailure,
 )
 
 
 def _overlap_columns_present_in_table(
-    table: DataFileInfo | None = None,
+    table: DataFileInfo,
     columns: list = [],
     overlap_start: str = "",
     overlap_end: str = "",
@@ -71,10 +72,14 @@ def _overlap_columns_contiguous_int(
 
 
 def _validate_overlap_columns(
-    table: DataFileInfo | None = None,
-    overlap_start: str | None = "",
-    overlap_end: str | None = "",
+    table: DataFileInfo,
+    overlap_start: str = "",
+    overlap_end: str = "",
 ) -> None:
+    if table.df is None:
+        raise TableValidationFailure(
+            f"Table '{table.label}' has no DataFrame loaded for overlap columns validation."
+        )
     columns = table.df.columns
     _overlap_columns_present_in_table(
         table=table,
@@ -99,11 +104,15 @@ def _validate_overlap_columns(
 
 
 def _fill_overlap_columns_DataFileInfo_field(
-    table: DataFileInfo | None = None,
+    table: DataFileInfo,
     overlap_start: int = -1,
     overlap_end: int = -1,
 ) -> None:
     overlap_columns: list[str] = []
+    if table.df is None:
+        raise TableValidationFailure(
+            f"Table '{table.label}' has no DataFrame loaded for filling overlap columns."
+        )
 
     for name in table.df.columns:
         try:
@@ -126,4 +135,8 @@ def _fill_overlap_columns_DataFileInfo_field(
 def _fill_overlap_columns_sql_DataFileInfo_field(
     table: DataFileInfo,
 ) -> None:
+    if table.overlap_columns is None:
+        raise OverlapColumnsFailure(
+            f"Table '{table.label}' has no defined overlap columns for filling SQL field."
+        )
     table.overlap_columns_sql = ", ".join(f'"{col}"' for col in table.overlap_columns)

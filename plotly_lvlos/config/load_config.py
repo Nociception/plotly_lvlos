@@ -14,7 +14,7 @@ from plotly_lvlos.errors.errors_config import (
 )
 
 
-def load_config(config_path: Path | None = None) -> dict:
+def load_config(config_path: Path) -> dict:
     if not config_path.exists():
         raise ConfigFileNotFound(f"Config file not found: {config_path}")
 

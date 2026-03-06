@@ -24,7 +24,7 @@ test:
 ruff:
 	@echo "Linting code with ruff..."
 	$(PYTHON) -m ruff format $(SRC_DIR) $(TEST_DIR)
-	$(PYTHON) -m ruff check --fix $(SRC_DIR) $(TEST_DIR)
+	$(PYTHON) -m ruff check $(SRC_DIR) $(TEST_DIR)
 
 clean:
 	@echo "Cleaning cache..."

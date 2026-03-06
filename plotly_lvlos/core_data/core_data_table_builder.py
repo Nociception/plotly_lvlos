@@ -7,7 +7,7 @@ from plotly_lvlos.errors.errors_build_core_data import (
 
 
 def _build_data_x_long(
-    con: duckdb.DuckDBPyConnection | None = None,
+    con: duckdb.DuckDBPyConnection,
     entity_column_label: str = "",
     overlap_column_label: str = "",
     data_x_overlap_columns_sql: str = "",
@@ -27,7 +27,7 @@ def _build_data_x_long(
 
 
 def _check_strictly_positive_data_x_values(
-    con: duckdb.DuckDBPyConnection | None = None,
+    con: duckdb.DuckDBPyConnection,
 ) -> None:
     invalid = con.execute("""
         SELECT
@@ -36,8 +36,8 @@ def _check_strictly_positive_data_x_values(
             data_x_long
         WHERE
             data_x <= 0
-    """).fetchone()[0]
-    if invalid > 0:
+    """).fetchone()
+    if invalid is not None and invalid[0] > 0:
         raise Data_xValuePositivenessFailure(
             f"Invalid data_x values: {invalid} values <= 0. "
             "Logarithmic scale requires strictly positive data."
@@ -45,10 +45,10 @@ def _check_strictly_positive_data_x_values(
 
 
 def _build_core_data_table(
-    con: duckdb.DuckDBPyConnection | None = None,
+    con: duckdb.DuckDBPyConnection,
     entity_column_label: str = "",
     overlap_column_label: str = "",
-    tables: dict[str, DataFileInfo] = [],
+    tables: dict[str, DataFileInfo] = {},
 ) -> None:
     _build_data_x_long(
         con=con,

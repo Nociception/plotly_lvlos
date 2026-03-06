@@ -26,7 +26,7 @@ EXPECTED_COLUMNS = [
 
 
 def _create_empty_matches_table(
-    con: duckdb.DuckDBPyConnection | None = None, matches_table_label: str = ""
+    con: duckdb.DuckDBPyConnection, matches_table_label: str = ""
 ) -> None:
     con.execute(f"""
         DROP TABLE IF EXISTS {matches_table_label}
@@ -49,7 +49,7 @@ def _create_empty_matches_table(
 
 
 def _insert_data_x_entities(
-    con: duckdb.DuckDBPyConnection | None = None,
+    con: duckdb.DuckDBPyConnection,
     data_x_table_label: str = "",
     matches_table_label: str = "",
     entity_column_label: str = "",
@@ -67,7 +67,7 @@ def _insert_data_x_entities(
 
 
 def _get_entities_from_table(
-    con: duckdb.DuckDBPyConnection | None = None,
+    con: duckdb.DuckDBPyConnection,
     table_label: str = "",
     entity_column_label: str = "",
 ) -> list:
@@ -83,8 +83,8 @@ def _get_entities_from_table(
 
 
 def _write_matches_excel(
-    df_matched: pd.DataFrame | None,
-    df_unmatched: pd.DataFrame | None,
+    df_matched: pd.DataFrame,
+    df_unmatched: pd.DataFrame,
     output_path: str = "",
 ) -> None:
     with pd.ExcelWriter(output_path, engine="xlsxwriter") as writer:
@@ -136,7 +136,7 @@ def _write_matches_excel(
 
 
 def _export_matches_excel(
-    con: duckdb.DuckDBPyConnection | None,
+    con: duckdb.DuckDBPyConnection,
     matches_table_label: str = "",
     output_path: str = "matches.xlsx",
 ) -> None:
@@ -164,7 +164,7 @@ def _export_matches_excel(
 
 
 def _load_matches_file(
-    con: duckdb.DuckDBPyConnection | None = None,
+    con: duckdb.DuckDBPyConnection,
     matches_file_path: str = "config/matches.xlsx",
     matches_table_label: str = "matches",
 ) -> None:
@@ -181,7 +181,9 @@ def _load_matches_file(
             raise FileReadFailure(
                 table=DataFileInfo(
                     label=matches_table_label,
-                    file=str(matches_file_path),
+                    overlap_columns_sql="",
+                    suffixes={},
+                    file=matches_file,
                     mandatory=True,
                     file_profile="clean",
                 ),
@@ -198,7 +200,9 @@ def _load_matches_file(
         raise FileReadFailure(
             table=DataFileInfo(
                 label=matches_table_label,
-                file=str(matches_file_path),
+                overlap_columns_sql="",
+                suffixes={},
+                file=matches_file,
                 mandatory=True,
                 file_profile="clean",
             ),
@@ -207,8 +211,8 @@ def _load_matches_file(
 
 
 def _fuzz_match_entities(
-    con: duckdb.DuckDBPyConnection | None = None,
-    table: DataFileInfo | None = None,
+    con: duckdb.DuckDBPyConnection,
+    table: DataFileInfo,
     entity_column_label: str = "",
     matches_table_label: str = "",
     x_entities: list[str] | None = None,

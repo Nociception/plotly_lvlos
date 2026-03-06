@@ -6,10 +6,12 @@ from plotly_lvlos.core_data.csv_profiles import CSV_PROFILES
 from plotly_lvlos.errors.errors_build_core_data import (
     EntityColumnFailure,
     EntityUniquenessFailure,
+    OverlapColumnsFailure,
+    TableValidationFailure,
 )
 
 
-def _extract_as_all_varchar(table: DataFileInfo) -> pl.DataFrame:
+def _extract_as_all_varchar(table: DataFileInfo) -> None:
     df = pl.read_csv(
         source=table.file,
         infer_schema_length=0,
@@ -20,9 +22,13 @@ def _extract_as_all_varchar(table: DataFileInfo) -> pl.DataFrame:
 
 
 def _validate_entity_first_column_label(
-    table: DataFileInfo | None = None,
+    table: DataFileInfo,
     entity_column_label: str = "",
 ) -> None:
+    if table.df is None:
+        raise EntityColumnFailure(
+            f"Table '{table.label}' has no DataFrame loaded for validation."
+        )
     first_col = table.df.columns[0]
     if first_col != entity_column_label:
         raise EntityColumnFailure(
@@ -70,6 +76,14 @@ def _convert_according_to_suffixes(
     suffixes_dict = table.suffixes if table.suffixes else default_suffixes
     suffixes_dict = suffixes_dict["suffixes"]
     num_cols = table.overlap_columns
+    if num_cols is None:
+        raise OverlapColumnsFailure(
+            f"Table '{table.label}' has no defined overlap columns for suffix conversion."
+        )
+    if table.df is None:
+        raise TableValidationFailure(
+            f"Table '{table.label}' has no DataFrame loaded for suffix conversion."
+        )
     table.df = table.df.with_columns(
         [
             (
@@ -89,9 +103,13 @@ def _convert_according_to_suffixes(
 
 
 def _load_into_duckdb(
-    duckdb_conn: duckdb.DuckDBPyConnection | None = None,
-    table: DataFileInfo | None = None,
+    duckdb_conn: duckdb.DuckDBPyConnection,
+    table: DataFileInfo,
 ) -> None:
+    if table.df is None:
+        raise TableValidationFailure(
+            f"Table '{table.label}' has no DataFrame loaded for loading into DuckDB."
+        )
     duckdb_conn.execute(f"DROP TABLE IF EXISTS {table.label}")
     duckdb_conn.register("arrow_tmp", table.df.to_arrow())
     duckdb_conn.execute(f"""

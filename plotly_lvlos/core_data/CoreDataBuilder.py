@@ -34,7 +34,7 @@ from plotly_lvlos.core_data.core_data_table_builder import (
 class CoreDataBuilder:
     def __init__(
         self,
-        con: duckdb.DuckDBPyConnection | None,
+        con: duckdb.DuckDBPyConnection,
         config_dict: dict | None,
         core_data_table_label: str = "",
     ):
@@ -51,17 +51,12 @@ class CoreDataBuilder:
         self.matches_table_label = "matches"
         self.core_data_table_label = core_data_table_label
         self.overlap_column_label = self.config_data["overlap_column"]
-        self.x_entities: list[str] | None = None
-        self.tables: dict[str, DataFileInfo] | None = None
+        self.x_entities: list[str]
+        self.tables: dict[str, DataFileInfo]
 
-    def build(
-        self,
-    ) -> tuple[
-        duckdb.DuckDBPyRelation,
-        duckdb.DuckDBPyRelation,
-    ]:
+    def build(self) -> None:
         self.tables = _create_DataFileInfo_objects(self.config_dict)
-        self.extract_parse_transform_load()
+        self.extract_parse_transform_load()  # decorator passes the supposed missing argument
         self.build_matches_table()
         _load_matches_file(
             con=self.con,
@@ -146,7 +141,7 @@ class CoreDataBuilder:
             table_label=self.tables["data_x"].label,
             entity_column_label=self.entity_column_label,
         )
-        self.merge_entities_into_matches_table()
+        self.merge_entities_into_matches_table()  # decorator passes the supposed missing argument
         _export_matches_excel(
             con=self.con,
             matches_table_label=self.matches_table_label,

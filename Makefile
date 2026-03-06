@@ -1,4 +1,4 @@
-.PHONY: build test lint format clean ci
+.PHONY: build test ruff clean ci
 
 PYTHON = uv run python
 BUILD_SCRIPT = build.py

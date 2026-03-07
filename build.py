@@ -1,6 +1,7 @@
 from pathlib import Path
 import webbrowser
 
+import duckdb
 from typeguard import typechecked
 
 from plotly_lvlos.config.load_config import load_config

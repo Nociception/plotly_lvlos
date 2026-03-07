@@ -6,11 +6,6 @@ SRC_DIR = plotly_lvlos
 TEST_DIR = tests
 
 build:
-
-	@if [ -f core_data.duckdb ]; then \
-		rm core_data.duckdb; \
-	fi
-
 	@echo " Building project..."
 
 	$(PYTHON) $(BUILD_SCRIPT)

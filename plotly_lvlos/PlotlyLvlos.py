@@ -17,7 +17,7 @@ class PlotlyLvlos:
         self.core_data_table_label = "core_data"
 
     def build_core_data_table(self) -> None:
-        # if not Path("core_data.csv").resolve().exists():
+        if not Path("core_data.csv").resolve().exists():
             core_data_builder = CoreDataBuilder(
                 con=self.con,
                 config_dict=self.config_dict,

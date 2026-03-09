@@ -59,6 +59,9 @@ CONFIG_TOML_DICT_SCHEMA = {
         "height": 800,  # int
         "frame_duration_ms": 300,  # int
         "transition_duration_ms": 0,  # int
+        "max_marker_size": 60,  # int
+        "min_marker_size": 3,  # int
+        "opacity": 0.8,  # float
     },
 }
 
@@ -176,6 +179,21 @@ CONFIG_TOML_DICT_SCHEMA_CONSTRAINTS = {
             "type": int,
             "min": 0,
             "max": 10000,
+        },
+        "max_marker_size": {
+            "type": int,
+            "min": 1,
+            "max": 1000,
+        },
+        "min_marker_size": {
+            "type": int,
+            "min": 1,
+            "max": 1000,
+        },
+        "opacity": {
+            "type": float,
+            "min": 0.0,
+            "max": 1.0,
         },
     },
 }

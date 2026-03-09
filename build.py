@@ -14,11 +14,9 @@ def build(config_path: str = "") -> None:
     plotly_lvlos = PlotlyLvlos(config_dict=config_dict)
     plotly_lvlos.build_core_data_table()
 
-    # plotly_lvlos.build_analytical_table(self)
+    # plotly_lvlos.build_analytical_table()
 
-    plotly_lvlos.build_plotly_frames()
-    plotly_lvlos.build_html()
-
+    plotly_lvlos.build_plotly_graphic_object()
     plotly_lvlos.close_connection()
 
 

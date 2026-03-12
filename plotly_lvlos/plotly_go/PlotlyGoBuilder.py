@@ -18,7 +18,7 @@ class PlotlyGoBuilder:
 
     def build_plotly_frames(self) -> None:
 
-        arrow_table = self.con.execute(f"""
+        df: pl.DataFrame = pl.from_arrow(self.con.execute(f"""
             SELECT
                 {self.entity_column_label} AS entity,
                 {self.overlap_column_label} AS overlap_value,
@@ -57,40 +57,45 @@ class PlotlyGoBuilder:
             ORDER BY
                 overlap_value,
                 {self.entity_column_label}
-        """).fetch_arrow_table()
-
-        df: pl.DataFrame = pl.from_arrow(arrow_table)
-        # df.write_csv("debug.csv")
+        """).fetch_arrow_table())  # type: ignore
 
         sizeref: float = (
             2 * df["size"].max()
             / (self.config_dict["visualization"]["max_marker_size"] ** 2)
         )
 
-        for frame_df in df.partition_by("overlap_value", maintain_order=True):
+        x: np.ndarray = df["data_x_log"].to_numpy()
+        y: np.ndarray = df["data_y_plot"].to_numpy()
+        size: np.ndarray = df["size"].to_numpy()
+        opacity: np.ndarray = df["opacity"].to_numpy()
+        entity: list[str] = df["entity"].to_list()
+        year: np.ndarray = df["overlap_value"].to_numpy()
 
-            frame = go.Frame(
+        frames: list[pl.DataFrame] = df.partition_by("overlap_value", maintain_order=True)
+        start: int = 0
+        for frame_df in frames:
+            n: int = frame_df.height
+            end: int = start + n
+            frame: go.Frame = go.Frame(
                 data=[
                     go.Scatter(
-                        x=frame_df["data_x_log"].to_numpy(),
-                        y=frame_df["data_y_plot"].to_numpy(),
+                        x=x[start:end],
+                        y=y[start:end],
                         mode="markers",
-
                         marker=dict(
-                            size=frame_df["size"].to_numpy(),
-                            opacity=frame_df["opacity"].to_numpy() * .8,
+                            size=size[start:end],
+                            opacity=opacity[start:end] * 0.8,
                             sizeref=sizeref,
                             sizemode="area",
                         ),
-
-                        text=frame_df["entity"].to_list(),
-                        ids=frame_df["entity"].to_list(),
+                        text=entity[start:end],
+                        ids=entity[start:end],
                     )
                 ],
-                name=str(frame_df["overlap_value"][0]),
+                name=str(year[start]),
             )
-
             self.frames.append(frame)
+            start = end
 
 
     def build_html(self) -> None:

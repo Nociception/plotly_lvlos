@@ -62,6 +62,42 @@ class PlotlyGoBuilder:
                 {self.entity_column_label}
         """).fetch_arrow_table())  # type: ignore
 
+        corr_df: pl.DataFrame = pl.from_arrow(self.con.execute(f"""
+            SELECT
+                {self.overlap_column_label} AS overlap_value,
+                corr(data_x, data_y_plot) AS corr_lin,
+                corr(data_x_log, data_y_plot) AS corr_log
+            FROM (
+                SELECT
+                    {self.entity_column_label},
+                    {self.overlap_column_label},
+                    data_x,
+                    data_x_log,
+                    COALESCE(
+                        LAST_VALUE(data_y IGNORE NULLS)
+                            OVER (
+                                PARTITION BY {self.entity_column_label}
+                                ORDER BY {self.overlap_column_label}
+                                ROWS BETWEEN UNBOUNDED PRECEDING AND CURRENT ROW
+                        ),
+                        FIRST_VALUE(data_y IGNORE NULLS)
+                            OVER (
+                                PARTITION BY {self.entity_column_label}
+                                ORDER BY {self.overlap_column_label}
+                                ROWS BETWEEN CURRENT ROW AND UNBOUNDED FOLLOWING
+                        )
+                    ) AS data_y_plot
+                FROM core_data
+            )
+            GROUP BY overlap_value
+            ORDER BY overlap_value
+        """).fetch_arrow_table())  # type: ignore
+
+
+        self.corr_year: np.ndarray = corr_df["overlap_value"].to_numpy()
+        self.corr_lin: np.ndarray = corr_df["corr_lin"].to_numpy()
+        self.corr_log: np.ndarray = corr_df["corr_log"].to_numpy()
+
         sizeref: float = (
             2 * df["size"].max()  # type: ignore
             / (self.config_dict["visualization"]["max_marker_size"] ** 2)
@@ -107,12 +143,27 @@ class PlotlyGoBuilder:
                         text=entity[start:end],
                         ids=entity[start:end],
                     ),
+                    go.Scatter(
+                        x=self.corr_year,
+                        y=self.corr_lin,
+                        mode="lines+markers",
+                        line=dict(width=2),
+                    ),
+                    go.Scatter(
+                        mode="lines+markers",
+                    ),
+                    go.Scatter(
+                        x=self.corr_year,
+                        y=self.corr_log,
+                        mode="lines+markers",
+                        line=dict(width=2),
+                    ),
                 ],
                 name=str(year[start]),
+                traces=[0, 1, 2, 3, 4],
             )
             self.frames.append(frame)
             start = end
-
 
     def build_html(self) -> None:
 
@@ -120,7 +171,6 @@ class PlotlyGoBuilder:
             rows=6,
             cols=4,
             specs=[
-
                 [{"rowspan": 3, "colspan": 3}, None, None, {"rowspan": 2}],
                 [None, None, None, None],
                 [None, None, None, {"rowspan": 2}],
@@ -137,11 +187,57 @@ class PlotlyGoBuilder:
 
         fig.add_trace(first_frame.data[0], row=1, col=1)  # type: ignore
         fig.add_trace(first_frame.data[1], row=4, col=1)  # type: ignore
-        fig.add_trace(go.Scatter(mode="lines", name="corr_log"), row=1, col=4)
-        fig.add_trace(go.Scatter(mode="lines", name="corr_diff"), row=3, col=4)
-        fig.add_trace(go.Scatter(mode="lines", name="corr_lin"), row=5, col=4)
+
+
+        fig.add_trace(
+            go.Scatter(
+                x=self.corr_year,
+                y=self.corr_lin,
+                mode="lines+markers",
+                line=dict(width=2),
+                name="pearson_lin",
+            ),
+            row=1,
+            col=4,
+        )
+
+
+        fig.add_trace(
+            go.Scatter(mode="lines+markers", name="corr_diff"),
+            row=3,
+            col=4,
+        )
+
+
+        fig.add_trace(
+            go.Scatter(
+                x=self.corr_year,
+                y=self.corr_log,
+                mode="lines+markers",
+                line=dict(width=2),
+                name="pearson_log",
+            ),
+            row=5,
+            col=4,
+        )
+
+        fig.update_xaxes(
+            range=[self.corr_year.min(), self.corr_year.max()],
+            row=1,
+            col=4,
+        )
+
+        fig.update_xaxes(
+            range=[self.corr_year.min(), self.corr_year.max()],
+            row=5,
+            col=4,
+        )
+
+        fig.update_xaxes(autorange=True, row=1, col=4)
+        fig.update_xaxes(autorange=True, row=5, col=4)
 
         fig.frames = self.frames
+
 
         slider_steps = [
             dict(
@@ -158,6 +254,7 @@ class PlotlyGoBuilder:
             )
             for frame in self.frames
         ]
+
 
         fig.update_layout(
             sliders=[dict(active=0, steps=slider_steps)],

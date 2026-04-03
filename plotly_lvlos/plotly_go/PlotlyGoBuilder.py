@@ -159,7 +159,11 @@ class PlotlyGoBuilder:
             SELECT
                 {self.overlap_column_label} AS overlap_value,
                 scale,
-                pearson_r
+                pearson_r,
+                spearman_rho,
+                r_squared,
+                ols_slope,
+                ols_rmse
             FROM analytics
             ORDER BY overlap_value, scale
         """).fetch_arrow_table())  # type: ignore
@@ -167,9 +171,18 @@ class PlotlyGoBuilder:
         lin_df = analytics_df.filter(pl.col("scale") == "lin")
         log_df = analytics_df.filter(pl.col("scale") == "log")
 
-        self.corr_year: np.ndarray = lin_df["overlap_value"].to_numpy()
-        self.corr_lin: np.ndarray  = lin_df["pearson_r"].to_numpy()
-        self.corr_log: np.ndarray  = log_df["pearson_r"].to_numpy()
+        self.analytics_years: np.ndarray = lin_df["overlap_value"].to_numpy()
+
+        indicators = ["pearson_r", "spearman_rho", "r_squared", "ols_slope", "ols_rmse"]
+        self.analytics: dict[str, dict[str, np.ndarray]] = {}
+        for ind in indicators:
+            lin_vals = lin_df[ind].to_numpy()
+            log_vals = log_df[ind].to_numpy()
+            self.analytics[ind] = {
+                "lin":  lin_vals,
+                "log":  log_vals,
+                "diff": lin_vals - log_vals,
+            }
 
         sizeref: float = (
             2 * df["size"].max()  # type: ignore
@@ -216,27 +229,13 @@ class PlotlyGoBuilder:
                         text=entity[start:end],
                         ids=entity[start:end],
                     ),
-                    go.Scatter(
-                        x=self.corr_year,
-                        y=self.corr_lin,
-                        mode="lines+markers",
-                        line=dict(width=2),
-                    ),
-                    go.Scatter(
-                        mode="lines+markers",
-                    ),
-                    go.Scatter(
-                        x=self.corr_year,
-                        y=self.corr_log,
-                        mode="lines+markers",
-                        line=dict(width=2),
-                    ),
                 ],
                 name=str(year[start]),
-                traces=[0, 1, 2, 3, 4],
+                traces=[0, 1],
             )
             self.frames.append(frame)
             start = end
+
 
     def build_html(self) -> None:
 
@@ -257,84 +256,107 @@ class PlotlyGoBuilder:
         )
 
         first_frame = self.frames[0]
-
         fig.add_trace(first_frame.data[0], row=1, col=1)  # type: ignore
         fig.add_trace(first_frame.data[1], row=4, col=1)  # type: ignore
 
+        default = "pearson_r"
+        years = self.analytics_years
 
         fig.add_trace(
             go.Scatter(
-                x=self.corr_year,
-                y=self.corr_lin,
+                x=years,
+                y=self.analytics[default]["lin"],
                 mode="lines+markers",
                 line=dict(width=2),
-                name="pearson_lin",
+                name=f"{default} lin",
             ),
-            row=1,
-            col=4,
+            row=1, col=4,
         )
-
-
-        fig.add_trace(
-            go.Scatter(mode="lines+markers", name="corr_diff"),
-            row=3,
-            col=4,
-        )
-
-
         fig.add_trace(
             go.Scatter(
-                x=self.corr_year,
-                y=self.corr_log,
+                x=years,
+                y=self.analytics[default]["diff"],
                 mode="lines+markers",
                 line=dict(width=2),
-                name="pearson_log",
+                name=f"{default} diff",
             ),
-            row=5,
-            col=4,
+            row=3, col=4,
         )
-
-        fig.update_xaxes(
-            range=[self.corr_year.min(), self.corr_year.max()],
-            row=1,
-            col=4,
-        )
-
-        fig.update_xaxes(
-            range=[self.corr_year.min(), self.corr_year.max()],
-            row=5,
-            col=4,
+        fig.add_trace(
+            go.Scatter(
+                x=years,
+                y=self.analytics[default]["log"],
+                mode="lines+markers",
+                line=dict(width=2),
+                name=f"{default} log",
+            ),
+            row=5, col=4,
         )
 
         fig.update_xaxes(autorange=True, row=1, col=4)
-        fig.update_yaxes(range=[0, 1], row=1, col=4)
-        
+        fig.update_yaxes(range=[0, 1],   row=1, col=4)
+        fig.update_xaxes(autorange=True, row=3, col=4)
         fig.update_xaxes(autorange=True, row=5, col=4)
-        fig.update_yaxes(range=[0, 1], row=5, col=4)
+        fig.update_yaxes(range=[0, 1],   row=5, col=4)
 
+        indicator_labels = {
+            "pearson_r":   "Pearson r",
+            "spearman_rho": "Spearman ρ",
+            "r_squared":   "R²",
+            "ols_slope":   "Pente OLS",
+            "ols_rmse":    "RMSE OLS",
+        }
+        dropdown_buttons = []
+        for ind, label in indicator_labels.items():
+            lin_vals  = self.analytics[ind]["lin"].tolist()
+            log_vals  = self.analytics[ind]["log"].tolist()
+            diff_vals = self.analytics[ind]["diff"].tolist()
 
-        fig.frames = self.frames
-
-
-        slider_steps = [
-            dict(
-                method="animate",
-                label=frame.name,
+            dropdown_buttons.append(dict(
+                method="restyle",
+                label=label,
                 args=[
-                    [frame.name],
-                    dict(
-                        mode="immediate",
-                        frame=dict(duration=80, redraw=True),
-                        transition=dict(duration=0),
-                    ),
+                    {
+                        "y": [lin_vals, diff_vals, log_vals],
+                        "x": [years.tolist(), years.tolist(), years.tolist()],
+                        "name": [f"{label} lin", f"{label} diff", f"{label} log"],
+                    },
+                    [2, 3, 4],
                 ],
-            )
-            for frame in self.frames
-        ]
-
+            ))
 
         fig.update_layout(
-            sliders=[dict(active=0, steps=slider_steps)],
+            updatemenus=[
+                dict(
+                    type="dropdown",
+                    direction="down",
+                    active=0,
+                    x=1.0,
+                    xanchor="right",
+                    y=1.02,
+                    yanchor="bottom",
+                    buttons=dropdown_buttons,
+                )
+            ],
+            sliders=[dict(
+                active=0,
+                steps=[
+                    dict(
+                        method="animate",
+                        label=frame.name,
+                        args=[
+                            [frame.name],
+                            dict(
+                                mode="immediate",
+                                frame=dict(duration=80, redraw=True),
+                                transition=dict(duration=0),
+                            ),
+                        ],
+                    )
+                    for frame in self.frames
+                ],
+            )],
         )
 
+        fig.frames = self.frames
         fig.write_html("plotly_lvlos.html", auto_play=True)

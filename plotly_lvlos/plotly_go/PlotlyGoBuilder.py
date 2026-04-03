@@ -307,7 +307,11 @@ class PlotlyGoBuilder:
         )
 
         fig.update_xaxes(autorange=True, row=1, col=4)
+        fig.update_yaxes(range=[0, 1], row=1, col=4)
+        
         fig.update_xaxes(autorange=True, row=5, col=4)
+        fig.update_yaxes(range=[0, 1], row=5, col=4)
+
 
         fig.frames = self.frames
 

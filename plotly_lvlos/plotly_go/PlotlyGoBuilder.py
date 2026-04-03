@@ -14,8 +14,111 @@ class PlotlyGoBuilder:
         self.frames: list[go.Frame] = []
 
     def build(self) -> None:
+        self.build_analytics()
         self.build_plotly_frames()
         self.build_html()
+
+
+    def build_analytics(self) -> None:
+        self.con.execute("DROP TABLE IF EXISTS analytics")
+        self.con.execute(f"""
+            CREATE TABLE analytics AS
+            
+                WITH
+                    cleaned AS (
+                        SELECT
+                            {self.entity_column_label},
+                            {self.overlap_column_label},
+                            data_x,
+                            data_x_log,
+                            data_y
+                        FROM core_data
+                        WHERE
+                            data_x IS NOT NULL
+                            AND data_y IS NOT NULL
+                    ),
+
+                    oc_agg AS (
+                        SELECT
+                            {self.overlap_column_label},
+                            avg(data_y)                         AS avg_y,
+                            avg(data_x)                         AS avg_x_lin,
+                            avg(data_x_log)                     AS avg_x_log,
+                            covar_pop(data_x, data_y)           AS covar_lin,
+                            covar_pop(data_x_log, data_y)       AS covar_log,
+                            var_pop(data_x)                     AS var_x_lin,
+                            var_pop(data_x_log)                 AS var_x_log
+                        FROM cleaned
+                        GROUP BY {self.overlap_column_label}
+                    ),
+
+                    ranked AS (
+                        SELECT
+                            c.{self.overlap_column_label},
+                            c.data_x,
+                            c.data_x_log,
+                            c.data_y,
+
+                            RANK() OVER (
+                                PARTITION BY c.{self.overlap_column_label}
+                                ORDER BY c.data_x
+                            ) AS rank_x,
+                            RANK() OVER (
+                                PARTITION BY c.{self.overlap_column_label}
+                                ORDER BY c.data_y
+                            ) AS rank_y,
+
+                            oca.covar_lin / NULLIF(oca.var_x_lin, 0)                               AS slope_lin,
+                            oca.avg_y - (oca.covar_lin / NULLIF(oca.var_x_lin, 0)) * oca.avg_x_lin AS intercept_lin,
+
+                            oca.covar_log / NULLIF(oca.var_x_log, 0)                               AS slope_log,
+                            oca.avg_y - (oca.covar_log / NULLIF(oca.var_x_log, 0)) * oca.avg_x_log AS intercept_log
+
+                        FROM
+                            cleaned AS c
+                            JOIN oc_agg AS oca
+                                ON oca.{self.overlap_column_label} = c.{self.overlap_column_label}
+                    ),
+
+                    lin_scale AS (
+                        SELECT
+                            {self.overlap_column_label},
+                            'lin'                                                               AS scale,
+                            corr(data_x, data_y)                                                AS pearson_r,
+                            corr(rank_x, rank_y)                                                AS spearman_rho,
+                            avg(slope_lin)                                                      AS ols_slope,
+                            avg(intercept_lin)                                                  AS ols_intercept,
+                            POWER(corr(data_x, data_y), 2)                                      AS r_squared,
+                            SQRT(avg(POWER(data_y - (slope_lin * data_x + intercept_lin), 2)))  AS ols_rmse,
+                            COUNT(*)                                                            AS n_entities
+                        FROM ranked
+                        GROUP BY {self.overlap_column_label}
+                    ),
+
+                    log_scale AS (
+                        SELECT
+                            {self.overlap_column_label},
+                            'log'                                                                       AS scale,
+                            corr(data_x_log, data_y)                                                    AS pearson_r,
+                            corr(rank_x, rank_y)                                                        AS spearman_rho,
+                            avg(slope_log)                                                              AS ols_slope,
+                            avg(intercept_log)                                                          AS ols_intercept,
+                            POWER(corr(data_x_log, data_y), 2)                                          AS r_squared,
+                            SQRT(avg(POWER(data_y - (slope_log * data_x_log + intercept_log), 2)))      AS ols_rmse,
+                            COUNT(*)                                                                    AS n_entities
+                        FROM ranked
+                        GROUP BY {self.overlap_column_label}
+                    )
+
+                SELECT * FROM lin_scale
+                UNION ALL
+                SELECT * FROM log_scale
+                ORDER BY
+                    {self.overlap_column_label},
+                    scale
+            """)
+        print(self.con.execute("SELECT * FROM analytics").fetchdf())
+
 
     def build_plotly_frames(self) -> None:
 
@@ -28,75 +131,45 @@ class PlotlyGoBuilder:
                 COALESCE(
                     LAST_VALUE(data_y IGNORE NULLS)
                         OVER (
-                            PARTITION BY
-                                {self.entity_column_label}
-                            ORDER BY
-                                {self.overlap_column_label}
+                            PARTITION BY {self.entity_column_label}
+                            ORDER BY {self.overlap_column_label}
                             ROWS BETWEEN UNBOUNDED PRECEDING AND CURRENT ROW
-                    ),
+                        ),
                     FIRST_VALUE(data_y IGNORE NULLS)
                         OVER (
-                            PARTITION BY
-                                {self.entity_column_label}
-                            ORDER BY
-                                {self.overlap_column_label}
+                            PARTITION BY {self.entity_column_label}
+                            ORDER BY {self.overlap_column_label}
                             ROWS BETWEEN CURRENT ROW AND UNBOUNDED FOLLOWING
-                    )
-                ) AS data_y_plot,
+                        )
+                )                                                               AS data_y_plot,
                 CAST(
-                    CASE
-                        WHEN data_y IS NULL THEN 0
-                        ELSE 1
-                    END
-                AS DOUBLE) AS opacity,
+                    CASE WHEN data_y IS NULL THEN 0 ELSE 1 END
+                AS DOUBLE)                                                      AS opacity,
                 extra_data_point,
                 GREATEST(
                     SQRT(extra_data_point),
                     {self.config_dict["visualization"]["min_marker_size"]}
-                ) AS size,
+                )                                                               AS size,
                 extra_data_x
-            FROM
-                core_data
-            ORDER BY
-                overlap_value,
-                {self.entity_column_label}
+            FROM core_data
+            ORDER BY overlap_value, {self.entity_column_label}
         """).fetch_arrow_table())  # type: ignore
 
-        corr_df: pl.DataFrame = pl.from_arrow(self.con.execute(f"""
+        analytics_df: pl.DataFrame = pl.from_arrow(self.con.execute(f"""
             SELECT
                 {self.overlap_column_label} AS overlap_value,
-                corr(data_x, data_y_plot) AS corr_lin,
-                corr(data_x_log, data_y_plot) AS corr_log
-            FROM (
-                SELECT
-                    {self.entity_column_label},
-                    {self.overlap_column_label},
-                    data_x,
-                    data_x_log,
-                    COALESCE(
-                        LAST_VALUE(data_y IGNORE NULLS)
-                            OVER (
-                                PARTITION BY {self.entity_column_label}
-                                ORDER BY {self.overlap_column_label}
-                                ROWS BETWEEN UNBOUNDED PRECEDING AND CURRENT ROW
-                        ),
-                        FIRST_VALUE(data_y IGNORE NULLS)
-                            OVER (
-                                PARTITION BY {self.entity_column_label}
-                                ORDER BY {self.overlap_column_label}
-                                ROWS BETWEEN CURRENT ROW AND UNBOUNDED FOLLOWING
-                        )
-                    ) AS data_y_plot
-                FROM core_data
-            )
-            GROUP BY overlap_value
-            ORDER BY overlap_value
+                scale,
+                pearson_r
+            FROM analytics
+            ORDER BY overlap_value, scale
         """).fetch_arrow_table())  # type: ignore
 
+        lin_df = analytics_df.filter(pl.col("scale") == "lin")
+        log_df = analytics_df.filter(pl.col("scale") == "log")
 
-        self.corr_year: np.ndarray = corr_df["overlap_value"].to_numpy()
-        self.corr_lin: np.ndarray = corr_df["corr_lin"].to_numpy()
-        self.corr_log: np.ndarray = corr_df["corr_log"].to_numpy()
+        self.corr_year: np.ndarray = lin_df["overlap_value"].to_numpy()
+        self.corr_lin: np.ndarray  = lin_df["pearson_r"].to_numpy()
+        self.corr_log: np.ndarray  = log_df["pearson_r"].to_numpy()
 
         sizeref: float = (
             2 * df["size"].max()  # type: ignore

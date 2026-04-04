@@ -239,105 +239,14 @@ class PlotlyGoBuilder:
 
     def build_html(self) -> None:
 
-        fig = make_subplots(
-            rows=6,
-            cols=4,
-            specs=[
-                [{"rowspan": 3, "colspan": 3}, None, None, {"rowspan": 2}],
-                [None, None, None, None],
-                [None, None, None, {"rowspan": 2}],
-                [{"rowspan": 3, "colspan": 3}, None, None, None],
-                [None, None, None, {"rowspan": 2}],
-                [None, None, None, None],
-            ],
-            column_widths=[0.25, 0.25, 0.25, 0.25],
-            horizontal_spacing=0.06,
-            vertical_spacing=0.08,
-        )
+        fig_left = make_subplots(rows=2, cols=1, vertical_spacing=0.08)
 
         first_frame = self.frames[0]
-        fig.add_trace(first_frame.data[0], row=1, col=1)  # type: ignore
-        fig.add_trace(first_frame.data[1], row=4, col=1)  # type: ignore
+        fig_left.add_trace(first_frame.data[0], row=1, col=1)
+        fig_left.add_trace(first_frame.data[1], row=2, col=1)
 
-        default = "pearson_r"
-        years = self.analytics_years
-
-        fig.add_trace(
-            go.Scatter(
-                x=years,
-                y=self.analytics[default]["lin"],
-                mode="lines+markers",
-                line=dict(width=2),
-                name=f"{default} lin",
-            ),
-            row=1, col=4,
-        )
-        fig.add_trace(
-            go.Scatter(
-                x=years,
-                y=self.analytics[default]["diff"],
-                mode="lines+markers",
-                line=dict(width=2),
-                name=f"{default} diff",
-            ),
-            row=3, col=4,
-        )
-        fig.add_trace(
-            go.Scatter(
-                x=years,
-                y=self.analytics[default]["log"],
-                mode="lines+markers",
-                line=dict(width=2),
-                name=f"{default} log",
-            ),
-            row=5, col=4,
-        )
-
-        fig.update_xaxes(autorange=True, row=1, col=4)
-        fig.update_yaxes(range=[0, 1],   row=1, col=4)
-        fig.update_xaxes(autorange=True, row=3, col=4)
-        fig.update_xaxes(autorange=True, row=5, col=4)
-        fig.update_yaxes(range=[0, 1],   row=5, col=4)
-
-        indicator_labels = {
-            "pearson_r":   "Pearson r",
-            "spearman_rho": "Spearman ρ",
-            "r_squared":   "R²",
-            "ols_slope":   "Pente OLS",
-            "ols_rmse":    "RMSE OLS",
-        }
-        dropdown_buttons = []
-        for ind, label in indicator_labels.items():
-            lin_vals  = self.analytics[ind]["lin"].tolist()
-            log_vals  = self.analytics[ind]["log"].tolist()
-            diff_vals = self.analytics[ind]["diff"].tolist()
-
-            dropdown_buttons.append(dict(
-                method="restyle",
-                label=label,
-                args=[
-                    {
-                        "y": [lin_vals, diff_vals, log_vals],
-                        "x": [years.tolist(), years.tolist(), years.tolist()],
-                        "name": [f"{label} lin", f"{label} diff", f"{label} log"],
-                    },
-                    [2, 3, 4],
-                ],
-            ))
-
-        fig.update_layout(
-            updatemenus=[
-                dict(
-                    type="dropdown",
-                    direction="down",
-                    active=0,
-                    x=1.0,
-                    xanchor="right",
-                    y=1.02,
-                    yanchor="bottom",
-                    buttons=dropdown_buttons,
-                )
-            ],
+        fig_left.frames = self.frames
+        fig_left.update_layout(
             sliders=[dict(
                 active=0,
                 steps=[
@@ -358,5 +267,137 @@ class PlotlyGoBuilder:
             )],
         )
 
-        fig.frames = self.frames
-        fig.write_html("plotly_lvlos.html", auto_play=True)
+        fig_right = make_subplots(
+            rows=6, cols=1,
+            specs=[
+                [{"rowspan": 2}],
+                [None],
+                [{"rowspan": 2}],
+                [None],
+                [{"rowspan": 2}],
+                [None],
+            ],
+            vertical_spacing=0.08,
+        )
+
+        default = "pearson_r"
+        years = self.analytics_years
+
+        fig_right.add_trace(
+            go.Scatter(
+                x=years, y=self.analytics[default]["lin"],
+                mode="lines+markers", line=dict(width=2),
+                name=f"{default} lin",
+            ),
+            row=1, col=1,
+        )
+        fig_right.add_trace(
+            go.Scatter(
+                x=years, y=self.analytics[default]["diff"],
+                mode="lines+markers", line=dict(width=2),
+                name=f"{default} diff",
+            ),
+            row=3, col=1,
+        )
+        fig_right.add_trace(
+            go.Scatter(
+                x=years, y=self.analytics[default]["log"],
+                mode="lines+markers", line=dict(width=2),
+                name=f"{default} log",
+            ),
+            row=5, col=1,
+        )
+
+        fig_right.update_yaxes(range=[0, 1], row=1, col=1)
+        fig_right.update_yaxes(range=[0, 1], row=5, col=1)
+
+        indicator_labels = {
+            "pearson_r":    "Pearson r",
+            "spearman_rho": "Spearman ρ",
+            "r_squared":    "R²",
+            "ols_slope":    "Pente OLS",
+            "ols_rmse":     "RMSE OLS",
+        }
+        dropdown_buttons = []
+        for ind, label in indicator_labels.items():
+            dropdown_buttons.append(dict(
+                method="restyle",
+                label=label,
+                args=[
+                    {
+                        "y": [
+                            self.analytics[ind]["lin"].tolist(),
+                            self.analytics[ind]["diff"].tolist(),
+                            self.analytics[ind]["log"].tolist(),
+                        ],
+                        "x": [years.tolist()] * 3,
+                        "name": [f"{label} lin", f"{label} diff", f"{label} log"],
+                    },
+                    [0, 1, 2],
+                ],
+            ))
+
+        fig_right.update_layout(
+            updatemenus=[dict(
+                type="dropdown",
+                direction="down",
+                active=0,
+                x=1.0,
+                xanchor="right",
+                y=1.05,
+                yanchor="bottom",
+                buttons=dropdown_buttons,
+            )],
+        )
+
+        fig_left.update_layout(autosize=True)
+        fig_right.update_layout(autosize=True)
+
+        html_left  = fig_left.to_html(full_html=False, include_plotlyjs="cdn")
+        html_right = fig_right.to_html(full_html=False, include_plotlyjs=False)
+
+        html = f"""<!DOCTYPE html>
+            <html>
+                <head>
+                    <meta charset="utf-8">
+                    <style>
+                        html, body {{
+                            margin: 0;
+                            height: 100%;
+                            overflow: hidden;
+                        }}
+                        body {{
+                            display: flex;
+                        }}
+                        .fig-left {{
+                            flex: 3;
+                            min-width: 0;
+                            height: 100vh;
+                        }}
+                        .fig-right {{
+                            flex: 1;
+                            min-width: 0;
+                            height: 100vh;
+                        }}
+                        .fig-left > div, .fig-right > div {{
+                            width: 100% !important;
+                            height: 100% !important;
+                        }}
+                    </style>
+                </head>
+                <body>
+                    <div class="fig-left">{html_left}</div>
+                    <div class="fig-right">{html_right}</div>
+                    <script>
+                        window.addEventListener('load', function() {{
+                            setTimeout(function() {{
+                                window.dispatchEvent(new Event('resize'));
+                            }}, 100);
+                        }});
+                    </script>
+                </body>
+        </html>
+        """
+
+        with open("plotly_lvlos.html", "w") as f:
+            f.write(html)

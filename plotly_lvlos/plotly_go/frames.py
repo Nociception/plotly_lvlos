@@ -9,6 +9,40 @@ if TYPE_CHECKING:
     from .PlotlyGoBuilder import PlotlyGoBuilder
 
 
+GINI_COLOR_NULL = '#aaaaaa'
+
+GINI_COLORSCALE = [
+    (0.0,  (0,   176, 80)),
+    (0.35, (255, 255, 0)),
+    (0.65, (255, 128, 0)),
+    (1.0,  (255, 0,   0)),
+]
+
+
+def _interpolate_color(t: float) -> str:
+    for i in range(len(GINI_COLORSCALE) - 1):
+        t0, c0 = GINI_COLORSCALE[i]
+        t1, c1 = GINI_COLORSCALE[i + 1]
+        if t0 <= t <= t1:
+            ratio = (t - t0) / (t1 - t0)
+            r = int(c0[0] + ratio * (c1[0] - c0[0]))
+            g = int(c0[1] + ratio * (c1[1] - c0[1]))
+            b = int(c0[2] + ratio * (c1[2] - c0[2]))
+            return f'#{r:02x}{g:02x}{b:02x}'
+    return GINI_COLOR_NULL
+
+
+def _gini_to_colors(gini_values: np.ndarray) -> list[str]:
+    colors = []
+    for v in gini_values:
+        if np.isnan(v):
+            colors.append(GINI_COLOR_NULL)
+        else:
+            t = float(np.clip(v / 100.0, 0.0, 1.0))
+            colors.append(_interpolate_color(t))
+    return colors
+
+
 def build_plotly_frames(builder: "PlotlyGoBuilder") -> None:
 
     df: pl.DataFrame = pl.from_arrow(builder.con.execute(f"""
@@ -39,7 +73,7 @@ def build_plotly_frames(builder: "PlotlyGoBuilder") -> None:
                 SQRT(extra_data_point),
                 {builder.config_dict["visualization"]["min_marker_size"]}
             )                                                               AS size,
-            extra_data_x
+            CAST(extra_data_x AS DOUBLE)                                    AS gini
         FROM core_data
         ORDER BY overlap_value, {builder.entity_column_label}
     """).fetch_arrow_table())  # type: ignore
@@ -77,18 +111,22 @@ def build_plotly_frames(builder: "PlotlyGoBuilder") -> None:
         / (builder.config_dict["visualization"]["max_marker_size"] ** 2)
     )
 
-    x_lin: np.ndarray = df["data_x"].to_numpy()
-    x_log: np.ndarray = df["data_x_log"].to_numpy()
-    y: np.ndarray = df["data_y_plot"].to_numpy()
-    size: np.ndarray = df["size"].to_numpy()
+    x_lin: np.ndarray   = df["data_x"].to_numpy()
+    x_log: np.ndarray   = df["data_x_log"].to_numpy()
+    y: np.ndarray       = df["data_y_plot"].to_numpy()
+    size: np.ndarray    = df["size"].to_numpy()
     opacity: np.ndarray = df["opacity"].to_numpy()
-    entity: list[str] = df["entity"].to_list()
-    year: np.ndarray = df["overlap_value"].to_numpy()
+    gini: np.ndarray    = df["gini"].to_numpy(allow_copy=True).astype(float)
+    entity: list[str]   = df["entity"].to_list()
+    year: np.ndarray    = df["overlap_value"].to_numpy()
 
     start: int = 0
     for frame_df in df.partition_by("overlap_value", maintain_order=True):
         n: int = frame_df.height
         end: int = start + n
+
+        colors: list[str] = _gini_to_colors(gini[start:end])
+
         frame: go.Frame = go.Frame(
             data=[
                 go.Scatter(
@@ -96,6 +134,7 @@ def build_plotly_frames(builder: "PlotlyGoBuilder") -> None:
                     y=y[start:end],
                     mode="markers",
                     marker=dict(
+                        color=colors,
                         size=size[start:end],
                         opacity=opacity[start:end] * 0.8,
                         sizeref=sizeref,
@@ -109,6 +148,7 @@ def build_plotly_frames(builder: "PlotlyGoBuilder") -> None:
                     y=y[start:end],
                     mode="markers",
                     marker=dict(
+                        color=colors,
                         size=size[start:end],
                         opacity=opacity[start:end] * 0.8,
                         sizeref=sizeref,

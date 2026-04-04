@@ -3,6 +3,7 @@ import plotly.graph_objects as go
 import numpy as np
 import polars as pl
 from plotly.subplots import make_subplots
+import json
 
 
 class PlotlyGoBuilder:
@@ -117,7 +118,7 @@ class PlotlyGoBuilder:
                     {self.overlap_column_label},
                     scale
             """)
-        print(self.con.execute("SELECT * FROM analytics").fetchdf())
+        # print(self.con.execute("SELECT * FROM analytics").fetchdf())
 
 
     def build_plotly_frames(self) -> None:
@@ -246,7 +247,9 @@ class PlotlyGoBuilder:
         fig_left.add_trace(first_frame.data[1], row=2, col=1)
 
         fig_left.frames = self.frames
+
         fig_left.update_layout(
+            autosize=True,
             sliders=[dict(
                 active=0,
                 steps=[
@@ -318,9 +321,10 @@ class PlotlyGoBuilder:
             "ols_slope":    "Pente OLS",
             "ols_rmse":     "RMSE OLS",
         }
-        dropdown_buttons = []
+
+        indicator_buttons = []
         for ind, label in indicator_labels.items():
-            dropdown_buttons.append(dict(
+            indicator_buttons.append(dict(
                 method="restyle",
                 label=label,
                 args=[
@@ -337,67 +341,169 @@ class PlotlyGoBuilder:
                 ],
             ))
 
-        fig_right.update_layout(
-            updatemenus=[dict(
-                type="dropdown",
-                direction="down",
-                active=0,
-                x=1.0,
-                xanchor="right",
-                y=1.05,
-                yanchor="bottom",
-                buttons=dropdown_buttons,
-            )],
-        )
+        entities: list[str] = sorted(set(self.frames[0].data[0].ids))  # type: ignore
+        entity_buttons = [
+            dict(method="skip", label="Track entity", args=[])
+        ] + [
+            dict(method="skip", label=entity, args=[])
+            for entity in entities
+        ]
 
-        fig_left.update_layout(autosize=True)
-        fig_right.update_layout(autosize=True)
+        fig_right.update_layout(
+            autosize=True,
+            updatemenus=[
+                dict(
+                    type="dropdown",
+                    direction="down",
+                    active=0,
+                    x=0.5,
+                    xanchor="center",
+                    y=1.05,
+                    yanchor="bottom",
+                    buttons=indicator_buttons,
+                ),
+                dict(
+                    type="dropdown",
+                    direction="up",
+                    active=0,
+                    x=0.5,
+                    xanchor="center",
+                    y=-0.05,
+                    yanchor="top",
+                    buttons=entity_buttons,
+                ),
+            ],
+        )
 
         html_left  = fig_left.to_html(full_html=False, include_plotlyjs="cdn")
         html_right = fig_right.to_html(full_html=False, include_plotlyjs=False)
 
-        html = f"""<!DOCTYPE html>
-            <html>
-                <head>
-                    <meta charset="utf-8">
-                    <style>
-                        html, body {{
-                            margin: 0;
-                            height: 100%;
-                            overflow: hidden;
-                        }}
-                        body {{
-                            display: flex;
-                        }}
-                        .fig-left {{
-                            flex: 3;
-                            min-width: 0;
-                            height: 100vh;
-                        }}
-                        .fig-right {{
-                            flex: 1;
-                            min-width: 0;
-                            height: 100vh;
-                        }}
-                        .fig-left > div, .fig-right > div {{
-                            width: 100% !important;
-                            height: 100% !important;
-                        }}
-                    </style>
-                </head>
-                <body>
-                    <div class="fig-left">{html_left}</div>
-                    <div class="fig-right">{html_right}</div>
-                    <script>
-                        window.addEventListener('load', function() {{
-                            setTimeout(function() {{
-                                window.dispatchEvent(new Event('resize'));
-                            }}, 100);
-                        }});
-                    </script>
-                </body>
-        </html>
+        entities_json = json.dumps(entities)
+
+        tracker_js = f"""
+        <script>
+        (function() {{
+            const DEFAULT_COLOR = '#636efa';
+            const HIGHLIGHT_COLOR = '#00e5ff';
+            const HIGHLIGHT_SIZE_FACTOR = 1.8;
+
+            let selectedEntity = null;
+
+            function getLeftDiv() {{
+                return document.querySelector('.fig-left .plotly-graph-div');
+            }}
+
+            function getRightDiv() {{
+                return document.querySelector('.fig-right .plotly-graph-div');
+            }}
+
+            function applyHighlight() {{
+                const gd = getLeftDiv();
+                if (!gd || !gd._fullData) return;
+
+                [0, 1].forEach(function(traceIdx) {{
+                    const trace = gd._fullData[traceIdx];
+                    if (!trace || !trace.ids) return;
+
+                    const ids = trace.ids;
+                    const baseSizes = gd.data[traceIdx].marker.size;
+
+                    const colors = ids.map(function(id) {{
+                        return id === selectedEntity ? HIGHLIGHT_COLOR : DEFAULT_COLOR;
+                    }});
+
+                    const sizes = Array.isArray(baseSizes)
+                        ? baseSizes.map(function(s, i) {{
+                            return ids[i] === selectedEntity
+                                ? s * HIGHLIGHT_SIZE_FACTOR
+                                : s;
+                        }})
+                        : baseSizes;
+
+                    const lineWidths = ids.map(function(id) {{
+                        return id === selectedEntity ? 3 : 0;
+                    }});
+
+                    const lineColors = ids.map(function(id) {{
+                        return id === selectedEntity ? '#000000' : 'rgba(0,0,0,0)';
+                    }});
+
+                    Plotly.restyle(gd, {{
+                        'marker.color': [colors],
+                        'marker.size': [sizes],
+                        'marker.line.width': [lineWidths],
+                        'marker.line.color': [lineColors],
+                    }}, [traceIdx]);
+                }});
+            }}
+
+            function hookAnimationEnd() {{
+                const gd = getLeftDiv();
+                if (!gd) return;
+                gd.on('plotly_animated', function() {{
+                    applyHighlight();
+                }});
+            }}
+
+            function hookEntityMenu() {{
+                const gd = getRightDiv();
+                if (!gd) return;
+
+                gd.on('plotly_buttonclicked', function(data) {{
+                    if (data.menu._index !== 1) return;
+
+                    const label = data.button.label;
+                    selectedEntity = (label === 'Track entity') ? null : label;
+                    applyHighlight();
+                }});
+            }}
+
+            window.addEventListener('load', function() {{
+                setTimeout(function() {{
+                    window.dispatchEvent(new Event('resize'));
+                    hookAnimationEnd();
+                    hookEntityMenu();
+                }}, 100);
+            }});
+        }})();
+        </script>
         """
+
+        html = f"""<!DOCTYPE html>
+        <html>
+            <head>
+                <meta charset="utf-8">
+                <style>
+                    html, body {{
+                        margin: 0;
+                        height: 100%;
+                        overflow: hidden;
+                    }}
+                    body {{
+                        display: flex;
+                    }}
+                    .fig-left {{
+                        flex: 3;
+                        min-width: 0;
+                        height: 100vh;
+                    }}
+                    .fig-right {{
+                        flex: 1;
+                        min-width: 0;
+                        height: 100vh;
+                    }}
+                    .fig-left > div, .fig-right > div {{
+                        width: 100% !important;
+                        height: 100% !important;
+                    }}
+                </style>
+            </head>
+            <body>
+                <div class="fig-left">{html_left}</div>
+                <div class="fig-right">{html_right}</div>
+                {tracker_js}
+            </body>
+        </html>"""
 
         with open("plotly_lvlos.html", "w") as f:
             f.write(html)

@@ -1,5 +1,6 @@
 from __future__ import annotations
 from typing import TYPE_CHECKING
+from pathlib import Path
 
 import numpy as np
 import polars as pl
@@ -18,6 +19,8 @@ GINI_COLORSCALE = [
     (1.0,  (255, 0,   0)),
 ]
 
+def _label_from_path(filepath: str) -> str:
+    return Path(filepath).stem.replace("_", " ").capitalize()
 
 def _interpolate_color(t: float) -> str:
     for i in range(len(GINI_COLORSCALE) - 1):
@@ -111,14 +114,26 @@ def build_plotly_frames(builder: "PlotlyGoBuilder") -> None:
         / (builder.config_dict["visualization"]["max_marker_size"] ** 2)
     )
 
-    x_lin: np.ndarray   = df["data_x"].to_numpy()
-    x_log: np.ndarray   = df["data_x_log"].to_numpy()
-    y: np.ndarray       = df["data_y_plot"].to_numpy()
-    size: np.ndarray    = df["size"].to_numpy()
-    opacity: np.ndarray = df["opacity"].to_numpy()
-    gini: np.ndarray    = df["gini"].to_numpy(allow_copy=True).astype(float)
-    entity: list[str]   = df["entity"].to_list()
-    year: np.ndarray    = df["overlap_value"].to_numpy()
+    x_lin: np.ndarray        = df["data_x"].to_numpy()
+    x_log: np.ndarray        = df["data_x_log"].to_numpy()
+    y: np.ndarray            = df["data_y_plot"].to_numpy()
+    size: np.ndarray         = df["size"].to_numpy()
+    opacity: np.ndarray      = df["opacity"].to_numpy()
+    gini: np.ndarray         = df["gini"].to_numpy(allow_copy=True).astype(float)
+    extra_data_point: np.ndarray = df["extra_data_point"].to_numpy()
+    entity: list[str]        = df["entity"].to_list()
+    year: np.ndarray         = df["overlap_value"].to_numpy()
+
+    labels = builder.labels
+
+    hovertemplate = (
+        f"<b>%{{id}}</b><br>"
+        f"{labels['data_x']} : %{{customdata[0]:,.0f}}<br>"
+        f"{labels['data_y']} : %{{customdata[1]:.2f}}<br>"
+        f"{labels['extra_data_point']} : %{{customdata[2]:,.0f}}<br>"
+        f"{labels['extra_data_x']} : %{{customdata[3]:.1f}}<br>"
+        f"<extra></extra>"
+    )
 
     start: int = 0
     for frame_df in df.partition_by("overlap_value", maintain_order=True):
@@ -127,35 +142,42 @@ def build_plotly_frames(builder: "PlotlyGoBuilder") -> None:
 
         colors: list[str] = _gini_to_colors(gini[start:end])
 
+        customdata = np.column_stack([
+            x_lin[start:end],
+            y[start:end],
+            extra_data_point[start:end],
+            gini[start:end],
+        ])
+
+        marker_common = dict(
+            color=colors,
+            size=size[start:end],
+            opacity=opacity[start:end] * 0.8,
+            sizeref=sizeref,
+            sizemode="area",
+        )
+
         frame: go.Frame = go.Frame(
             data=[
                 go.Scatter(
                     x=x_lin[start:end],
                     y=y[start:end],
                     mode="markers",
-                    marker=dict(
-                        color=colors,
-                        size=size[start:end],
-                        opacity=opacity[start:end] * 0.8,
-                        sizeref=sizeref,
-                        sizemode="area",
-                    ),
+                    marker=marker_common,
                     text=entity[start:end],
                     ids=entity[start:end],
+                    customdata=customdata,
+                    hovertemplate=hovertemplate,
                 ),
                 go.Scatter(
                     x=x_log[start:end],
                     y=y[start:end],
                     mode="markers",
-                    marker=dict(
-                        color=colors,
-                        size=size[start:end],
-                        opacity=opacity[start:end] * 0.8,
-                        sizeref=sizeref,
-                        sizemode="area",
-                    ),
+                    marker=marker_common,
                     text=entity[start:end],
                     ids=entity[start:end],
+                    customdata=customdata,
+                    hovertemplate=hovertemplate,
                 ),
             ],
             name=str(year[start]),

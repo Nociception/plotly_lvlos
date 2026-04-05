@@ -5,6 +5,7 @@ import numpy as np
 from .analytics import build_analytics
 from .frames import build_plotly_frames
 from .html.html_builder import build_html
+from .labels import _extract_labels
 
 
 class PlotlyGoBuilder:
@@ -16,6 +17,7 @@ class PlotlyGoBuilder:
         self.frames: list[go.Frame] = []
         self.analytics_years: np.ndarray = np.array([])
         self.analytics: dict[str, dict[str, np.ndarray]] = {}
+        self.labels: dict[str, str] = _extract_labels(config_dict)
 
     def build(self) -> None:
         build_analytics(self)

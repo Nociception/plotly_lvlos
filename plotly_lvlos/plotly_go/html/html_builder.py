@@ -10,11 +10,10 @@ if TYPE_CHECKING:
 
 
 def build_html(builder: "PlotlyGoBuilder") -> None:
-
     fig_left = build_fig_left(builder)
     fig_right, _ = build_fig_right(builder)
 
-    html_left  = fig_left.to_html(full_html=False, include_plotlyjs="cdn")
+    html_left = fig_left.to_html(full_html=False, include_plotlyjs="cdn")
     html_right = fig_right.to_html(full_html=False, include_plotlyjs=False)
 
     tracker_js = build_tracker_js()

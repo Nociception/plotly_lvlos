@@ -18,24 +18,26 @@ def build_fig_left(builder: "PlotlyGoBuilder") -> go.Figure:
 
     fig.update_layout(
         autosize=True,
-        sliders=[dict(
-            active=0,
-            steps=[
-                dict(
-                    method="animate",
-                    label=frame.name,
-                    args=[
-                        [frame.name],
-                        dict(
-                            mode="immediate",
-                            frame=dict(duration=80, redraw=True),
-                            transition=dict(duration=0),
-                        ),
-                    ],
-                )
-                for frame in builder.frames
-            ],
-        )],
+        sliders=[
+            dict(
+                active=0,
+                steps=[
+                    dict(
+                        method="animate",
+                        label=frame.name,
+                        args=[
+                            [frame.name],
+                            dict(
+                                mode="immediate",
+                                frame=dict(duration=80, redraw=True),
+                                transition=dict(duration=0),
+                            ),
+                        ],
+                    )
+                    for frame in builder.frames
+                ],
+            )
+        ],
     )
 
     return fig

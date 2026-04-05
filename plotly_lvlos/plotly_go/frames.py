@@ -10,17 +10,19 @@ if TYPE_CHECKING:
     from .PlotlyGoBuilder import PlotlyGoBuilder
 
 
-GINI_COLOR_NULL = '#aaaaaa'
+GINI_COLOR_NULL = "#aaaaaa"
 
 GINI_COLORSCALE = [
-    (0.0,  (0,   176, 80)),
+    (0.0, (0, 176, 80)),
     (0.35, (255, 255, 0)),
     (0.65, (255, 128, 0)),
-    (1.0,  (255, 0,   0)),
+    (1.0, (255, 0, 0)),
 ]
+
 
 def _label_from_path(filepath: str) -> str:
     return Path(filepath).stem.replace("_", " ").capitalize()
+
 
 def _interpolate_color(t: float) -> str:
     for i in range(len(GINI_COLORSCALE) - 1):
@@ -31,7 +33,7 @@ def _interpolate_color(t: float) -> str:
             r = int(c0[0] + ratio * (c1[0] - c0[0]))
             g = int(c0[1] + ratio * (c1[1] - c0[1]))
             b = int(c0[2] + ratio * (c1[2] - c0[2]))
-            return f'#{r:02x}{g:02x}{b:02x}'
+            return f"#{r:02x}{g:02x}{b:02x}"
     return GINI_COLOR_NULL
 
 
@@ -47,8 +49,8 @@ def _gini_to_colors(gini_values: np.ndarray) -> list[str]:
 
 
 def build_plotly_frames(builder: "PlotlyGoBuilder") -> None:
-
-    df: pl.DataFrame = pl.from_arrow(builder.con.execute(f"""
+    df: pl.DataFrame = pl.from_arrow(
+        builder.con.execute(f"""
         SELECT
             {builder.entity_column_label} AS entity,
             {builder.overlap_column_label} AS overlap_value,
@@ -79,9 +81,11 @@ def build_plotly_frames(builder: "PlotlyGoBuilder") -> None:
             CAST(extra_data_x AS DOUBLE)                                    AS gini
         FROM core_data
         ORDER BY overlap_value, {builder.entity_column_label}
-    """).fetch_arrow_table())  # type: ignore
+    """).fetch_arrow_table()
+    )  # type: ignore
 
-    analytics_df: pl.DataFrame = pl.from_arrow(builder.con.execute(f"""
+    analytics_df: pl.DataFrame = pl.from_arrow(
+        builder.con.execute(f"""
         SELECT
             {builder.overlap_column_label} AS overlap_value,
             scale,
@@ -92,7 +96,8 @@ def build_plotly_frames(builder: "PlotlyGoBuilder") -> None:
             ols_rmse
         FROM analytics
         ORDER BY overlap_value, scale
-    """).fetch_arrow_table())  # type: ignore
+    """).fetch_arrow_table()
+    )  # type: ignore
 
     lin_df = analytics_df.filter(pl.col("scale") == "lin")
     log_df = analytics_df.filter(pl.col("scale") == "log")
@@ -104,25 +109,26 @@ def build_plotly_frames(builder: "PlotlyGoBuilder") -> None:
         lin_vals = lin_df[ind].to_numpy()
         log_vals = log_df[ind].to_numpy()
         builder.analytics[ind] = {
-            "lin":  lin_vals,
-            "log":  log_vals,
+            "lin": lin_vals,
+            "log": log_vals,
             "diff": lin_vals - log_vals,
         }
 
     sizeref: float = (
-        2 * df["size"].max()  # type: ignore
+        2
+        * df["size"].max()  # type: ignore
         / (builder.config_dict["visualization"]["max_marker_size"] ** 2)
     )
 
-    x_lin: np.ndarray        = df["data_x"].to_numpy()
-    x_log: np.ndarray        = df["data_x_log"].to_numpy()
-    y: np.ndarray            = df["data_y_plot"].to_numpy()
-    size: np.ndarray         = df["size"].to_numpy()
-    opacity: np.ndarray      = df["opacity"].to_numpy()
-    gini: np.ndarray         = df["gini"].to_numpy(allow_copy=True).astype(float)
+    x_lin: np.ndarray = df["data_x"].to_numpy()
+    x_log: np.ndarray = df["data_x_log"].to_numpy()
+    y: np.ndarray = df["data_y_plot"].to_numpy()
+    size: np.ndarray = df["size"].to_numpy()
+    opacity: np.ndarray = df["opacity"].to_numpy()
+    gini: np.ndarray = df["gini"].to_numpy(allow_copy=True).astype(float)
     extra_data_point: np.ndarray = df["extra_data_point"].to_numpy()
-    entity: list[str]        = df["entity"].to_list()
-    year: np.ndarray         = df["overlap_value"].to_numpy()
+    entity: list[str] = df["entity"].to_list()
+    year: np.ndarray = df["overlap_value"].to_numpy()
 
     labels = builder.labels
 
@@ -142,12 +148,14 @@ def build_plotly_frames(builder: "PlotlyGoBuilder") -> None:
 
         colors: list[str] = _gini_to_colors(gini[start:end])
 
-        customdata = np.column_stack([
-            x_lin[start:end],
-            y[start:end],
-            extra_data_point[start:end],
-            gini[start:end],
-        ])
+        customdata = np.column_stack(
+            [
+                x_lin[start:end],
+                y[start:end],
+                extra_data_point[start:end],
+                gini[start:end],
+            ]
+        )
 
         marker_common = dict(
             color=colors,

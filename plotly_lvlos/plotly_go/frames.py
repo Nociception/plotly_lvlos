@@ -109,9 +109,10 @@ def build_plotly_frames(builder: "PlotlyGoBuilder") -> None:
         lin_vals = lin_df[ind].to_numpy()
         log_vals = log_df[ind].to_numpy()
         builder.analytics[ind] = {
-            "lin": lin_vals,
-            "log": log_vals,
-            "diff": lin_vals - log_vals,
+            "lin":      lin_vals,
+            "log":      log_vals,
+            "diff":     lin_vals - log_vals,
+            "abs_diff": np.abs(lin_vals - log_vals),
         }
 
     sizeref: float = (

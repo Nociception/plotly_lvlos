@@ -23,7 +23,7 @@ def build(config_path: str = "") -> None:
 if __name__ == "__main__":
     build(config_path="config/config.toml")
 
-    html_path = Path("plotly_lvlos.html").resolve()
+    html_path = Path("index.html").resolve()
     if html_path.exists():
         webbrowser.open(f"file://{html_path}")
     else:

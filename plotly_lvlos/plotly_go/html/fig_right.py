@@ -7,9 +7,9 @@ from plotly.subplots import make_subplots
 if TYPE_CHECKING:
     from ..PlotlyGoBuilder import PlotlyGoBuilder
 
-COLOR_LIN  = '#636efa'
-COLOR_LOG  = '#ef553b'
-COLOR_DIFF = '#00cc96'
+COLOR_LIN = "#636efa"
+COLOR_LOG = "#ef553b"
+COLOR_DIFF = "#00cc96"
 
 
 def _split_by_dominance(
@@ -64,7 +64,8 @@ def build_fig_right(builder: "PlotlyGoBuilder") -> tuple[go.Figure, list[str]]:
             line=dict(width=2, color=COLOR_LIN),
             name=f"{default} lin",
         ),
-        row=1, col=1,
+        row=1,
+        col=1,
     )
 
     x_y, y_lin_dom, x_log, y_log_dom = _split_by_dominance(
@@ -83,7 +84,8 @@ def build_fig_right(builder: "PlotlyGoBuilder") -> tuple[go.Figure, list[str]]:
             name=f"{default} diff (lin>log)",
             connectgaps=False,
         ),
-        row=3, col=1,
+        row=3,
+        col=1,
     )
     fig.add_trace(
         go.Scatter(
@@ -94,7 +96,8 @@ def build_fig_right(builder: "PlotlyGoBuilder") -> tuple[go.Figure, list[str]]:
             name=f"{default} diff (log>lin)",
             connectgaps=False,
         ),
-        row=3, col=1,
+        row=3,
+        col=1,
     )
 
     fig.add_trace(
@@ -105,18 +108,19 @@ def build_fig_right(builder: "PlotlyGoBuilder") -> tuple[go.Figure, list[str]]:
             line=dict(width=2, color=COLOR_LOG),
             name=f"{default} log",
         ),
-        row=5, col=1,
+        row=5,
+        col=1,
     )
 
     fig.update_yaxes(range=[0, 1], row=1, col=1)
     fig.update_yaxes(range=[0, 1], row=5, col=1)
 
     indicator_labels = {
-        "pearson_r":    "Pearson r",
+        "pearson_r": "Pearson r",
         "spearman_rho": "Spearman ρ",
-        "r_squared":    "R²",
-        "ols_slope":    "Pente OLS",
-        "ols_rmse":     "RMSE OLS",
+        "r_squared": "R²",
+        "ols_slope": "Pente OLS",
+        "ols_rmse": "RMSE OLS",
     }
     indicator_buttons = []
     for ind, label in indicator_labels.items():
@@ -126,29 +130,31 @@ def build_fig_right(builder: "PlotlyGoBuilder") -> tuple[go.Figure, list[str]]:
             builder.analytics[ind]["lin"],
             builder.analytics[ind]["log"],
         )
-        indicator_buttons.append(dict(
-            method="restyle",
-            label=label,
-            args=[
-                {
-                    "y": [
-                        builder.analytics[ind]["lin"].tolist(),
-                        y_lin_dom,
-                        y_log_dom,
-                        builder.analytics[ind]["log"].tolist(),
-                    ],
-                    "x": [years.tolist()] * 4,
-                    "name": [
-                        f"{label} lin",
-                        f"{label} diff (lin>log)",
-                        f"{label} diff (log>lin)",
-                        f"{label} log",
-                    ],
-                    "line.color": [COLOR_LIN, COLOR_LIN, COLOR_LOG, COLOR_LOG],
-                },
-                [0, 1, 2, 3],
-            ],
-        ))
+        indicator_buttons.append(
+            dict(
+                method="restyle",
+                label=label,
+                args=[
+                    {
+                        "y": [
+                            builder.analytics[ind]["lin"].tolist(),
+                            y_lin_dom,
+                            y_log_dom,
+                            builder.analytics[ind]["log"].tolist(),
+                        ],
+                        "x": [years.tolist()] * 4,
+                        "name": [
+                            f"{label} lin",
+                            f"{label} diff (lin>log)",
+                            f"{label} diff (log>lin)",
+                            f"{label} log",
+                        ],
+                        "line.color": [COLOR_LIN, COLOR_LIN, COLOR_LOG, COLOR_LOG],
+                    },
+                    [0, 1, 2, 3],
+                ],
+            )
+        )
 
     entities: list[str] = sorted(set(builder.frames[0].data[0].ids))  # type: ignore
     entity_buttons = [dict(method="skip", label="Track entity", args=[])] + [

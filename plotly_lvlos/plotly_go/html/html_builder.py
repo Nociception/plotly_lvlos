@@ -10,17 +10,17 @@ if TYPE_CHECKING:
 
 
 def build_html(builder: "PlotlyGoBuilder") -> None:
-    fig_left  = build_fig_left(builder)
+    fig_left = build_fig_left(builder)
     fig_right, _ = build_fig_right(builder)
 
-    html_left  = fig_left.to_html(full_html=False, include_plotlyjs="cdn")
+    html_left = fig_left.to_html(full_html=False, include_plotlyjs="cdn")
     html_right = fig_right.to_html(full_html=False, include_plotlyjs=False)
 
     tracker_js = build_tracker_js()
 
     labels = builder.labels
 
-    title_left  = f"{labels['data_x']} vs {labels['data_y']}"
+    title_left = f"{labels['data_x']} vs {labels['data_y']}"
     title_right = "Statistical indicators"
 
     html = f"""<!DOCTYPE html>
@@ -97,5 +97,5 @@ def build_html(builder: "PlotlyGoBuilder") -> None:
     </body>
 </html>"""
 
-    with open("plotly_lvlos.html", "w") as f:
+    with open("index.html", "w") as f:
         f.write(html)

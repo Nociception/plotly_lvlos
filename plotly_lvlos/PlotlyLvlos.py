@@ -24,8 +24,6 @@ class PlotlyLvlos:
             )
             core_data_builder.build()
 
-    # def build_analytical_table(self)
-
     def build_plotly_graphic_object(self) -> None:
         plotly_go_builder = PlotlyGoBuilder(
             con=self.con,

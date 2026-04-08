@@ -215,7 +215,7 @@ def _fuzz_match_entities(
     table: DataFileInfo,
     entity_column_label: str = "",
     matches_table_label: str = "",
-    x_entities: list[str] | None = None,
+    x_entities: list[str] = [],
 ):
     match_threshold: int = 90
     table_entities = _get_entities_from_table(
@@ -225,7 +225,7 @@ def _fuzz_match_entities(
     for table_entity in table_entities:
         best_match_in_x, score, _ = process.extractOne(
             table_entity, x_entities, scorer=fuzz.WRatio
-        )
+        )  # type: ignore
         if score >= 100:
             matches.append((table_entity, best_match_in_x, "exact", 1.0))
         elif score >= match_threshold:

@@ -63,6 +63,9 @@ overlap_end = 2050
 min_points_per_year = 5
 
 [visualization]
+max_marker_size = 60
+min_marker_size = 3
+opacity = 0.8
 width = 1200
 height = 800
 frame_duration_ms = 300

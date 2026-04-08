@@ -12,9 +12,13 @@ wheels/
 # polars tests
 polars_tests/
 
+# lock files
+.~lock.*#
+
 # Specific files
 todo
 *matches.xlsx*
 *table.html
 *_debug.csv
 core_data.duckdb
+debug.csv

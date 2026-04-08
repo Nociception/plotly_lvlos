@@ -2,16 +2,10 @@
 
 PYTHON = uv run python
 BUILD_SCRIPT = build.py
-CONFIG = config/config.toml
 SRC_DIR = plotly_lvlos
 TEST_DIR = tests
 
 build:
-
-	@if [ -f core_data.duckdb ]; then \
-		rm core_data.duckdb; \
-	fi
-
 	@echo " Building project..."
 
 	$(PYTHON) $(BUILD_SCRIPT)
@@ -27,8 +21,12 @@ ruff:
 	$(PYTHON) -m ruff check $(SRC_DIR) $(TEST_DIR)
 
 clean:
-	@echo "Cleaning cache..."
+	@echo "Cleaning cache and generated files..."
 	rm -rf __pycache__ */__pycache__
+	@if [ -f "core_data.duckdb" ]; then rm core_data.duckdb; echo "Removed core_data.duckdb"; fi
+	@if [ -f "config/matches.xlsx" ]; then rm config/matches.xlsx; echo "Removed config/matches.xlsx"; fi
+	@if [ -f "core_data.csv" ]; then rm core_data.csv; echo "Removed core_data.csv"; fi
+	@if [ -f "index.html" ]; then rm index.html; echo "Removed index.html"; fi
 
 ci: clean build ruff test
 	@echo "CI tasks completed successfully!"

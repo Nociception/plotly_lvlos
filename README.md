@@ -4,9 +4,10 @@
 
 🌐 **[Live demo](https://nociception.github.io/plotly_lvlos/)**
 
-<video src="demo.mp4" controls="controls" autoplay="autoplay" loop="loop" muted="muted" style="max-width:100%;">
-  Your browser does not support the video tag.
+
+<video src="https://github.com/user-attachments/assets/91e2179e-b168-46dd-a320-a4c575566524" autoplay muted loop playsinline style="max-width:100%;">
 </video>
+
 
 ---
 

@@ -4,8 +4,7 @@
 
 🌐 **[Live demo](https://nociception.github.io/plotly_lvlos/)**
 
-<video src="https://github.com/user-attachments/assets/5eddf612-20db-45e0-ab50-b59c5c85648a" autoplay muted loop playsinline style="max-width:100%;">
-</video>
+
 
 ---
 

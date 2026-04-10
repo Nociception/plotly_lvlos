@@ -1,345 +1,114 @@
-check where pandas is used
+# 📊 plotly-lvlos — Lin vs Log on Scatter
 
-warning : yellow
+> An interactive [Gapminder like](https://www.gapminder.org/tools/#$chart-type=bubbles&url=v2) data visualization tool that animates scatter plots across time and compares the effect of linear vs. logarithmic x-axis scaling on statistical indicators.
 
+🌐 **[Live demo](https://nociception.github.io/plotly_lvlos/)**
 
+<video src="demo.mp4" controls="controls" autoplay="autoplay" loop="loop" muted="muted" style="max-width:100%;">
+  Your browser does not support the video tag.
+</video>
 
+---
 
+## What this project shows
 
+Two animated scatter plots run in parallel — one with a linear x-axis, one with a logarithmic x-axis — on the same dataset. A side panel tracks how key statistical indicators (Pearson r, Spearman ρ, R², OLS slope, OLS RMSE) evolve over time, and how differently they behave depending on the scale chosen.
 
+The takeaway: **scale is not neutral**. The choice between linear and logarithmic x-axis can dramatically change what a statistical indicator tells you — and this tool makes that visible, frame by frame.
 
+The current dataset maps GDP per capita (data_x) against life expectancy (data_y) across 195 countries from 1800 to 2050. Point size encodes population (extra_data_point); color encodes the Gini coefficient (extra_data_x) when available.
 
+> This tool is dataset-agnostic: any wide-format CSV dataset can be substituted. See [Swapping the dataset](#swapping-the-dataset).
 
+---
 
+## Features
 
+- Animated scatter plots (linear & log scale) with a shared time slider
+- Real-time statistical indicators panel with dropdown selector
+- Entity tracker: highlight and follow any country across frames
+- extra_data_x color gradient on data points (green → yellow → orange → red)
+- Fully static HTML output — no server required, GitHub Pages compatible
 
-Project overview — motivation, scope and current state
-General idea of the project
+---
 
-This project explores how the choice of scale on one axis (linear vs logarithmic) fundamentally alters the interpretation of statistical relationships, using animated scatter plots over time.
+## Tech stack
 
-The core question is deliberately simple, but often underestimated:
+| Layer | Tool | Why |
+|---|---|---|
+| SQL analytics | **DuckDB** | In-process analytical SQL engine — native window functions, UNPIVOT, direct Arrow integration. Purpose-built for this kind of aggregation workload, unlike SQLite (transactional) or pandas (verbose and slower on columnar ops). |
+| DataFrame | **Polars** | Rust-backed, parallel execution, consistently faster than pandas. Zero-copy integration with DuckDB via Apache Arrow. |
+| Visualization | **Plotly (Graph Objects)** | Only library offering the level of control required: animated frames, custom JS hooks, multi-subplot layout, static HTML export. |
+| Build | **uv** | Fast, reproducible Python environment management. |
+| Output | **Static HTML** | Self-contained, no backend, deployable anywhere. |
 
-How much of what we “see” in a scatter plot is a property of the data — and how much is an artefact of the scale we chose?
+---
 
-The project focuses on datasets such as:
+## Quickstart
 
-GDP per capita
+**Requirements:** [uv](https://github.com/astral-sh/uv)
+```bash
+git clone https://github.com/nociception/plotly_lvlos.git
+cd plotly_lvlos
+make
+```
 
-Life expectancy
+The outputs are :
+- core_data.csv: a long-format CSV, result of the merge of the input wide-format CSVs.
+- self-contained HTML file. Open it in any modern browser.
 
-Population
+> **Note for 42 school machines:** `uv` requires write access to `~/.local`. You may need to adjust `$HOME`, or run inside a Docker container or VM.
 
-Inequality indicators (e.g. Gini coefficient)
+---
 
-These variables typically span several orders of magnitude. On a linear scale, most of the structure is visually compressed; on a logarithmic scale, different patterns emerge, correlations shift, and trends become legible in a different way.
+## Swapping the dataset
 
-The goal is therefore not merely to display two static plots, but to:
+All data parameters are defined in `config/config.toml`:
+```toml
+[data]
+x_file                    = "data/your_x_data.csv"
+y_file                    = "data/your_y_data.csv"
+extra_data_point_file     = "data/your_size_data.csv"
+extra_data_x_file         = "data/your_color_data.csv"
+entity_column             = "country"
+overlap_column            = "year"
+```
 
-animate the data over time,
+Input files must be in **wide format**: entities as rows, time periods as columns. The code handles alignment, unpivoting, and missing values automatically.
 
-compute and display analytical metrics per year,
+---
 
-and allow a direct visual comparison between linear-scale and log-scale interpretations of the same underlying data.
+## Statistical indicators computed
 
-Relation to the original project
+All indicators are computed independently for linear and log x-axis, per time period, across all entities with available data.
 
-In its original form, the project required users to:
+| Indicator | Description |
+|---|---|
+| **Pearson r** | Linear correlation between x and y |
+| **Spearman ρ** | Rank-based correlation — robust to outliers |
+| **R²** | Coefficient of determination |
+| **OLS slope** | Slope of the ordinary least squares regression line |
+| **OLS RMSE** | Root mean square error of OLS residuals |
 
-clone the repository,
+The middle panel displays the absolute difference between the linear and log values of the selected indicator, colored by which scale produces the larger value.
 
-install dependencies,
+---
 
-create a virtual environment,
+## About
 
-and run Python scripts locally.
+This project was built as part of the [42 Nice](https://42nice.fr) curriculum.
 
-The codebase was exploratory rather than architectural:
+It serves as a practical demonstration of:
 
-data validation and schema enforcement were minimal,
+- Python : OOP, modular architecture
+- Data engineering: polars, duckDB's SQL, fuzzy matching for entity tracking, wide-to-long data transformation
+- Analytical SQL
+- Data-aware visualization design
 
-entity alignment logic was implicit and fragile,
+📬 [GitHub profile](https://github.com/nociception)
 
-missing or mismatched data was often silently dropped,
+---
 
-intermediate artefacts were not clearly defined or reusable.
+## License
 
-As a result, despite the relevance of the underlying idea, the project was poorly suited for portfolio use or for review by non-technical audiences.
-
-Objectives of the refactor
-
-The refactored project explicitly addresses those limitations.
-
-Its goals are to:
-
-Produce a fully static output
-
-a single HTML file,
-
-no runtime backend,
-
-no Python execution required to view the result,
-
-directly openable in a browser.
-
-Use Plotly for interactive and animated visualizations
-
-smooth animations over time,
-
-hover metadata,
-
-dual linear / logarithmic representations,
-
-explicit annotation of analytical metrics.
-
-Treat data engineering as a first-class concern
-
-strict schema validation,
-
-explicit error and warning semantics,
-
-deterministic handling of missing or misaligned data,
-
-reproducible and inspectable intermediate artefacts.
-
-Make the project readable and auditable
-
-clear separation of pipeline phases,
-
-explicit contracts between steps,
-
-configuration-driven behaviour,
-
-no hidden assumptions or “magic” joins.
-
-The intended result is a project that is:
-
-easy to run once,
-
-easy to inspect,
-
-easy to share,
-
-and easy to reason about.
-
-High-level pipeline overview
-
-The project is structured as a multi-phase data pipeline.
-Each phase produces explicit artefacts and enforces strict invariants.
-
-Phase 0 — Configuration validation
-
-A strict config.toml file defines:
-
-project metadata,
-
-data sources,
-
-analytical parameters,
-
-visualization parameters.
-
-The configuration is validated against:
-
-a closed declarative schema,
-
-type constraints,
-
-value bounds,
-
-file existence rules (mandatory vs optional datasets).
-
-No data is read at this stage.
-Only structure, constraints and internal consistency are validated.
-
-Phase 1 — Unified core data construction (entity resolution & alignment)
-
-This phase is the conceptual and technical core of the project.
-
-Objective
-
-Build a single canonical analytical table that integrates all datasets — mandatory and optional — in one pass.
-
-There is no longer a notion of “core” versus “enriched” data.
-All datasets participate equally in the construction of the analytical table.
-
-Role of the matches table
-
-The matches table is the central alignment contract of the pipeline.
-
-It defines, for each logical entity:
-
-the reference entity label in data_x,
-
-the corresponding entity labels in other datasets (or their absence),
-
-the nature of each match (exact, fuzzy, unmatched),
-
-an associated confidence score.
-
-Unmatched entities are explicitly represented, rather than silently discarded.
-
-This ensures that:
-
-entity resolution is auditable and user-editable,
-
-fuzzy matching is never irreversible,
-
-missing or ambiguous entities are visible as data, not hidden control flow.
-
-Construction logic
-
-The unified construction phase performs the following steps:
-
-Load and validate all input tables
-
-Mandatory and optional datasets are treated uniformly.
-
-Structural validation is applied consistently.
-
-Tables failing validation are excluded if optional, or raise blocking errors if mandatory.
-
-Resolve the entity space
-
-data_x defines the reference entity axis.
-
-Other datasets are aligned to it using the matches table.
-
-Orphan entities are preserved explicitly as unmatched rows.
-
-Resolve the temporal / numerical axis
-
-Overlapping columns (typically years) are detected per table.
-
-Tables may have different coverage; only the valid overlap is considered.
-
-Wide tables are normalized into a long (entity_id, year) representation using SQL UNPIVOT.
-
-Materialize the analytical table
-
-All datasets are merged into a single long-format table.
-
-Each row represents one (entity_id, year) pair.
-
-Values from different datasets may be null independently.
-
-Output artefact
-
-The result of Phase 1 is a single canonical table, persisted as a parquet file:
-
-entity_id | year | x_value | y_value | extra_data_point | extra_data_x
-
-
-Key invariants:
-
-No row is dropped due to partial missing data.
-
-Optional datasets never invalidate the table.
-
-Missing values are explicit and traceable.
-
-Entity mismatches are handled upstream via the matches table, not hidden downstream.
-
-This table is the only input for all subsequent analytical and visualization phases.
-
-At the current stage of the project, this phase is essentially complete.
-
-Error and warning semantics
-
-Structural violations or invalid values in mandatory datasets produce blocking errors.
-
-Issues in optional datasets (missing entities, missing years) produce warnings.
-
-Entity resolution issues are diagnosed at the matches table level, not during merging.
-
-Failures are therefore:
-
-early,
-
-localized,
-
-explicit,
-
-and explainable.
-
-Conceptual simplification
-
-This unified approach removes several ambiguities present in the earlier design:
-
-Before	Now
-Core vs enriched tables	Single canonical table
-Implicit entity joins	Explicit matches table
-Silent data loss	Explicit unmatched rows
-Dataset-specific logic	Uniform integration
-
-As a result, the pipeline is simpler to reason about, easier to debug, and more robust to future extensions.
-
-Phase 2 — Analytical transformations
-
-Rows with missing x_value or y_value are excluded from analysis.
-
-Logarithmic transformation of x_value is computed.
-
-Zero or negative values trigger blocking errors.
-
-Per-year analytical metrics are computed once:
-
-regression coefficients,
-
-correlations,
-
-dispersion metrics.
-
-Years with insufficient data emit warnings and produce null metrics.
-
-Phase 3 — Frame materialization
-
-Metric tables are materialized explicitly.
-
-Plotly animation frames (linear and logarithmic) are precomputed.
-
-No computation occurs at visualization time.
-
-Phase 4 — Final Plotly figure assembly
-
-All frames are assembled into a single Plotly figure.
-
-Layout, animation, annotations and interactions are configured.
-
-The final output is exported as a fully static HTML file.
-
-Current implementation status & working methodology
-
-Already implemented
-
-Strict, declarative config.toml schema.
-
-Full configuration parsing and validation.
-
-Explicit constraint handling.
-
-File existence checks.
-
-Construction of entity matching tables.
-
-Unified core data construction using SQL and UNPIVOT.
-
-Not yet implemented
-
-Full analytical metric computation.
-
-Final Plotly animation assembly.
-
-Development follows a deliberately disciplined approach:
-
-test-driven development using pytest,
-
-incremental implementation with explicit failure modes,
-
-strict separation between validation, transformation and visualization,
-
-CI with formatting, linting and tests,
-
-protected main branch with PR-based merging, even as a solo developer.
-
-The emphasis is on correctness, explicitness and auditability rather than speed or cleverness.
+[MIT](LICENSE)

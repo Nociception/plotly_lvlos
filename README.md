@@ -2,10 +2,9 @@
 
 > An interactive [Gapminder like](https://www.gapminder.org/tools/#$chart-type=bubbles&url=v2) data visualization tool that animates scatter plots across time and compares the effect of linear vs. logarithmic x-axis scaling on statistical indicators.
 
-🌐 **[Live demo](https://nociception.github.io/plotly_lvlos/)**
+🌐 **[Live demo](https://nociception.github.io/plotly_lvlos/)** (far better than the video below : move the slider, explore the data by moving your mouse over the point, track an entity (country), display different statistical indicators on the right side)
 
-<video src="demo.mp4" controls="controls" autoplay="autoplay" loop="loop" muted="muted" style="max-width:100%;">
-  Your browser does not support the video tag.
+<video src="https://github.com/user-attachments/assets/f3fd67fc-e5e3-40c3-8ea7-b411da4013c7" autoplay muted loop playsinline style="max-width:100%;">
 </video>
 
 ---
